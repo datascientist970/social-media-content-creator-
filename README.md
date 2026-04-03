@@ -1,19 +1,19 @@
 ```markdown
-# SocialGenius AI 🚀
+#SocialGenius AI 🚀
 
-## Transform Your Content into Viral Social Media Posts
+##Transform Your Content into Viral Social Media Posts
 
 SocialGenius AI is a powerful Django-based web application that automatically generates professional, platform-optimized social media content using Google's Gemini AI. Simply upload an image, video, or text, and get ready-to-post content for all major social media platforms including YouTube, Instagram, Facebook, LinkedIn, Twitter, TikTok, and Pinterest.
 
 
-## ✨ Features
+##✨ Features
 
-### 🤖 AI-Powered Content Generation
+###🤖 AI-Powered Content Generation
 - **Image Analysis**: Upload any image and get detailed descriptions
 - **Video Processing**: Extract frames and transcribe audio with Whisper
 - **Text Optimization**: Transform plain text into engaging social posts
 
-### 📱 Multi-Platform Support
+###📱 Multi-Platform Support
 | Platform | Content Generated |
 |----------|-------------------|
 | YouTube | SEO Title + Description + Tags |
@@ -24,7 +24,7 @@ SocialGenius AI is a powerful Django-based web application that automatically ge
 | TikTok | Viral-Style Caption + Trending Tags |
 | Pinterest | SEO-Optimized Title + Description |
 
-### 🎯 Key Capabilities
+###🎯 Key Capabilities
 - ✅ **Real-time AI processing** using Google Gemini API
 - ✅ **Smart content detection** (digital marketing, Islamic content, nature, business, food, fitness, travel, technology, education)
 - ✅ **Automatic hashtag generation** with trending tags
@@ -36,7 +36,7 @@ SocialGenius AI is a powerful Django-based web application that automatically ge
 
 ---
 
-## 🚀 Quick Start
+##🚀 Quick Start
 
 ### Prerequisites
 
@@ -44,7 +44,7 @@ SocialGenius AI is a powerful Django-based web application that automatically ge
 - FFmpeg (for video processing)
 - Google Gemini API Key
 
-### Installation
+###Installation
 
 1. **Clone the repository**
 ```bash
@@ -53,15 +53,15 @@ cd socialgenius-ai
 ```
 
 2. **Create virtual environment**
-```bash
+
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+
 
 3. **Install dependencies**
-```bash
+
 pip install -r requirements.txt
-```
+
 
 4. **Install FFmpeg**
 - **Windows**: Download from [ffmpeg.org](https://ffmpeg.org/download.html) and add to PATH
@@ -69,30 +69,30 @@ pip install -r requirements.txt
 - **Linux**: `sudo apt-get install ffmpeg`
 
 5. **Configure API Key**
-```python
+
 # In settings.py
 GEMINI_API_KEY = 'your-gemini-api-key-here'
 GEMINI_MODEL = 'gemini-1.5-flash'
-```
+
 
 6. **Run migrations**
-```bash
+
 python manage.py migrate
-```
+
 
 7. **Start the server**
-```bash
+
 python manage.py runserver
-```
+
 
 8. **Open your browser**
-```
+
 http://127.0.0.1:8000
-```
+
 
 ---
 
-## 📁 Project Structure
+##📁Project Structure
 
 ```
 social_media_content_manager/
@@ -122,11 +122,10 @@ social_media_content_manager/
 
 ---
 
-## 🔧 Configuration
+##🔧Configuration
 
-### Settings Configuration
+###Settings Configuration
 
-```python
 # settings.py
 
 # Google Gemini API
@@ -154,7 +153,7 @@ SECRET_KEY=your-secret-key
 
 ---
 
-## 🎯 Usage Guide
+##🎯Usage Guide
 
 ### 1. Upload Content
 
@@ -213,7 +212,6 @@ Upload short videos (1-3 minutes) with clear audio for best results.
 
 ### Gemini Vision API Integration
 
-```python
 # Image analysis endpoint
 POST /process/
 Content-Type: multipart/form-data
@@ -225,7 +223,7 @@ Parameters:
 - text_content: string (for text type)
 
 Response: Redirects to results page with generated content
-```
+
 
 ### Error Codes
 
