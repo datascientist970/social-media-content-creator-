@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocialGenius AI | Your Generated Content</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+
+        /* Error Page Styles */
+        .error-card {
+            background: white;
+            border-radius: 32px;
+            padding: 3rem;
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .error-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .error-message {
+            color: #4a5568;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .error-code {
+            background: #f3f4f6;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            display: inline-block;
+            font-size: 0.85rem;
+            font-family: monospace;
+            margin-bottom: 2rem;
+        }
+
+        .countdown-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 16px;
+            margin: 1.5rem 0;
+        }
+
+        .countdown-number {
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        /* Back Button */
+        .back-btn {
+            background: white;
+            border: none;
+            border-radius: 50px;
+            padding: 10px 24px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .back-btn:hover {
+            transform: translateX(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        /* Platform Cards */
+        .platform-card {
+            background: white;
+            border-radius: 20px;
+            border: none;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        }
+
+        .platform-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.2);
+        }
+
+        .card-header-custom {
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-header-custom i {
+            font-size: 1.5rem;
+        }
+
+        .card-body-custom {
+            padding: 1.5rem;
+        }
+
+        .section-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .content-box {
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .content-box textarea, .content-box input {
+            background: transparent;
+            border: none;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+            outline: none;
+        }
+
+        .content-box textarea {
+            min-height: 100px;
+        }
+
+        .copy-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+            border: 1px solid #e5e7eb;
+            color: #6b7280;
+        }
+
+        .copy-icon:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* Platform Colors */
+        .youtube-header { background: #FF0000; color: white; }
+        .instagram-header { background: linear-gradient(135deg, #833AB4, #E4405F, #F56040); color: white; }
+        .facebook-header { background: #1877F2; color: white; }
+        .linkedin-header { background: #0A66C2; color: white; }
+        .twitter-header { background: #1DA1F2; color: white; }
+        .tiktok-header { background: #000000; color: white; }
+        .pinterest-header { background: #E60023; color: white; }
+
+        /* Export Card */
+        .export-card {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 20px;
+            border: none;
+            color: white;
+        }
+
+        .export-card .btn-light {
+            border-radius: 50px;
+            padding: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        
+        {% if social.error %}
+        <!-- Error Display Page -->
+        <div class="error-card">
+            <div class="error-icon">
+                {% if social.code == 'RATE_LIMIT' %}
+                    <i class="fas fa-hourglass-half" style="color: #ed8936;"></i>
+                {% elif social.code == 'AUTH_ERROR' %}
+                    <i class="fas fa-key" style="color: #f56565;"></i>
+                {% elif social.code == 'SERVICE_UNAVAILABLE' %}
+                    <i class="fas fa-server" style="color: #e53e3e;"></i>
+                {% elif social.code == 'TIMEOUT' %}
+                    <i class="fas fa-clock" style="color: #ecc94b;"></i>
+                {% elif social.code == 'CONNECTION_ERROR' %}
+                    <i class="fas fa-wifi" style="color: #f56565;"></i>
+                {% else %}
+                    <i class="fas fa-exclamation-triangle" style="color: #ed8936;"></i>
+                {% endif %}
+            </div>
+            <h2 class="error-title">
+                {% if social.code == 'RATE_LIMIT' %}
+                    Rate Limit Exceeded
+                {% elif social.code == 'AUTH_ERROR' %}
+                    API Authentication Error
+                {% elif social.code == 'SERVICE_UNAVAILABLE' %}
+                    Service Unavailable
+                {% else %}
+                    Generation Failed
+                {% endif %}
+            </h2>
+            <p class="error-message">{{ social.error }}</p>
+            <div class="error-code">Error Code: {{ social.code|default:"UNKNOWN" }}</div>
+            
+            {% if social.code == 'RATE_LIMIT' %}
+            <div class="countdown-box">
+                <i class="fas fa-hourglass-half me-2"></i>
+                Please wait <span class="countdown-number" id="countdown">60</span> seconds before trying again
+            </div>
+            {% endif %}
+            
+            <a href="{% url 'home' %}" class="btn btn-primary btn-lg rounded-pill px-4">
+                <i class="fas fa-arrow-left me-2"></i>Back to Home
+            </a>
+        </div>
+        
+        {% else %}
+        <!-- Success Display - Show Generated Content -->
+        
+        <!-- Back Button -->
+        <div class="mb-4">
+            <a href="{% url 'home' %}" class="btn back-btn">
+                <i class="fas fa-arrow-left me-2"></i>Upload New Content
+            </a>
+        </div>
+        
+        <!-- Analysis Results Card -->
+        <div class="card mb-4" style="background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px -15px rgba(0,0,0,0.2);">
+            <div class="card-header" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 1rem 1.5rem;">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Analysis Results</h5>
+            </div>
+            <div class="card-body" style="padding: 1.5rem;">
+                <div class="mb-3">
+                    <div class="section-label">VISUAL DESCRIPTION</div>
+                    <div class="content-box">
+                        <i class="fas fa-eye text-muted me-2"></i>
+                        <span>{{ description }}</span>
+                        <div class="copy-icon" onclick="copyText('{{ description|escapejs }}', 'Description')">
+                            <i class="fas fa-copy"></i> Copy
+                        </div>
+                    </div>
+                </div>
+                
+                {% if transcript %}
+                <div class="mb-3">
+                    <div class="section-label">🎤 AUDIO TRANSCRIPT</div>
+                    <div class="content-box">
+                        <i class="fas fa-microphone me-2"></i>
+                        {{ transcript }}
+                        <div class="copy-icon" onclick="copyText('{{ transcript|escapejs }}', 'Transcript')">
+                            <i class="fas fa-copy"></i> Copy
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Social Media Content -->
+        <div class="row">
+            <div class="col-lg-6">
+                <!-- YouTube Card -->
+                <div class="platform-card">
+                    <div class="card-header-custom youtube-header">
+                        <i class="fab fa-youtube"></i>
+                        <span>YouTube</span>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="section-label">TITLE</div>
+                        <div class="content-box">
+                            <input type="text" id="yt-title" value="{{ social.youtube.title }}" readonly style="width: 100%; border: none; background: transparent; outline: none;">
+                            <div class="copy-icon" onclick="copyElementValue('yt-title', 'YouTube Title')">
+                                <i class="fas fa-copy"></i> Copy
+                            </div>
+                        </div>
+                        
+                        <div class="section-label mt-3">DESCRIPTION</div>
+                        <div class="content-box">
+                            <textarea id="yt-desc" readonly rows="4">{{ social.youtube.description }}</textarea>
+                            <div class="copy-icon" onclick="copyElementValue('yt-desc', 'YouTube Description')">
+                                <i class="fas fa-copy"></i> Copy
+                            </div>
+                        </div>
+                        
+                        <div class="section-label mt-3">TAGS</div>
+                        <div class="content-box">
+                            <div id="yt-tags">{{ social.youtube.tags }}</div>
+                            <div class="copy-icon" onclick="copyElementText('yt-tags', 'YouTube Tags')">
+                                <i class="fas fa-copy"></i> Copy
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Instagram Card -->
+                <div class="platform-card">
+                    <div class="card-header-custom instagram-header">
+                        <i class="fab fa-instagram"></i>
+                        <span>Instagram</span>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="section-label">CAPTION</div>
+                        <div class="content-box">
+                            <textarea id="ig-caption" readonly rows="4">{{ social.instagram.caption }}</textarea>
+                            <div class="copy-icon" onclick="copyElementValue('ig-caption', 'Instagram Caption')">
+                                <i class="fas fa-copy"></i> Copy
+                            </div>
+                        </div>
+                        
+                        <div class="section-label mt-3">HASHTAGS</div>
+                        <div class="content-box">
+                            <div id="ig-hashtags">{{ social.instagram.hashtags }}</div>
+                            <div class="copy-icon" onclick="copyElementText('ig-hashtags', 'Instagram Hashtags')">
+                                <i class="fas fa-copy"></i> Copy All
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Facebook Card -->
+                <div class="platform-card">
+                    <div class="card-header-custom facebook-header">
+                        <i class="fab fa-facebook"></i>
+                        <span>Facebook</span>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="section-label">POST</div>
+                        <div class="content-box">
+                            <textarea id="fb-post" readonly rows="4">{{ social.facebook.post }}</textarea>
+                            <div class="copy-icon" onclick="copyElementValue('fb-post', 'Facebook Post')">
+                                <i class="fas fa-copy"></i> Copy
+                            </div>
+                        </div>
+                        
+                        <div class="section-label mt-3">HASHTAGS</div>
+                        <div class="content-box">
+                            <div id="fb-hashtags">{{ social.facebook.hashtags }}</div>
+                            <div class="copy-icon" onclick="copyElementText('fb-hashtags', 'Facebook Hashtags')">
+                                <i class="fas fa-copy"></i> Copy
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- TikTok Card -->
+                <div class="platform-card">
+                    <div class="card-header-custom tiktok-header">
+                        <i class="fab fa-tiktok"></i>
+                        <span>TikTok</span>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="section-label">CAPTION</div>
+                        <div class="content-box">
+                            <textarea id="tiktok-caption" readonly rows="3">{{ social.tiktok.caption }}</textarea>
+                            <div class="copy-icon" onclick="copyElementValue('tiktok-caption', 'TikTok Caption')">
+                                <i class="fas fa-copy"></i> Copy
+                            </div>
+                        </div>
+                        
+                        <div class="section-label mt-3">HASHTAGS</div>
+                        <div class="content-box">
+                            <div id="tiktok-hashtags">{{ social.tiktok.hashtags }}</div>
+                            <div class="copy-icon" onclick="copyElementText('tiktok-hashtags', 'TikTok Hashtags')">
+                                <i class="fas fa-copy"></i> Copy All
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <!-- LinkedIn Card -->
+                <div class="platform-card">
+                    <div class="card-header-custom linkedin-header">
+                        <i class="fab fa-linkedin"></i>
+                        <span>LinkedIn</span>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="section-label">POST</div>
+                        <div class="content-box">
+                            <textarea id="li-post" readonly rows="4">{{ social.linkedin.post }}</textarea>
+                            <div class="copy-icon" onclick="copyElementValue('li-post', 'LinkedIn Post')">
+                                <i class="fas fa-copy"></i> Copy
+                            </div>
+                        </div>
+                        
+                        <div class="section-label mt-3">HASHTAGS</div>
+                        <div class="content-box">
+                            <div id="li-hashtags">{{ social.linkedin.hashtags }}</div>
+                            <div class="copy-icon" onclick="copyElementText('li-hashtags', 'LinkedIn Hashtags')">
+                                <i class="fas fa-copy"></i> Copy
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Twitter Card -->
+                <div class="platform-card">
+                    <div class="card-header-custom twitter-header">
+                        <i class="fab fa-twitter"></i>
+                        <span>Twitter/X</span>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="section-label">TWEET</div>
+                        <div class="content-box">
+                            <textarea id="tw-tweet" readonly rows="3">{{ social.twitter.tweet }}</textarea>
+                            <div class="copy-icon" onclick="copyElementValue('tw-tweet', 'Tweet')">
+                                <i class="fas fa-copy"></i> Copy
+                            </div>
+                        </div>
+                        
+                        <div class="section-label mt-3">HASHTAGS</div>
+                        <div class="content-box">
+                            <div id="tw-hashtags">{{ social.twitter.hashtags }}</div>
+                            <div class="copy-icon" onclick="copyElementText('tw-hashtags', 'Twitter Hashtags')">
+                                <i class="fas fa-copy"></i> Copy
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pinterest Card -->
+                <div class="platform-card">
+                    <div class="card-header-custom pinterest-header">
+                        <i class="fab fa-pinterest"></i>
+                        <span>Pinterest</span>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="section-label">TITLE</div>
+                        <div class="content-box">
+                            <input type="text" id="pinterest-title" value="{{ social.pinterest.title }}" readonly style="width: 100%; border: none; background: transparent; outline: none;">
+                            <div class="copy-icon" onclick="copyElementValue('pinterest-title', 'Pinterest Title')">
+                                <i class="fas fa-copy"></i> Copy
+                            </div>
+                        </div>
+                        
+                        <div class="section-label mt-3">DESCRIPTION</div>
+                        <div class="content-box">
+                            <textarea id="pinterest-desc" readonly rows="3">{{ social.pinterest.description }}</textarea>
+                            <div class="copy-icon" onclick="copyElementValue('pinterest-desc', 'Pinterest Description')">
+                                <i class="fas fa-copy"></i> Copy
+                            </div>
+                        </div>
+                        
+                        <div class="section-label mt-3">HASHTAGS</div>
+                        <div class="content-box">
+                            <div id="pinterest-hashtags">{{ social.pinterest.hashtags }}</div>
+                            <div class="copy-icon" onclick="copyElementText('pinterest-hashtags', 'Pinterest Hashtags')">
+                                <i class="fas fa-copy"></i> Copy All
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Export Card -->
+                <div class="export-card">
+                    <div class="card-body-custom text-center">
+                        <i class="fas fa-download fa-2x mb-3"></i>
+                        <h5 class="mb-3">Export All Content</h5>
+                        <button class="btn btn-light w-100 mb-2" onclick="copyAllToClipboard()">
+                            <i class="fas fa-copy me-2"></i>Copy All Content
+                        </button>
+                        <button class="btn btn-light w-100" onclick="window.print()">
+                            <i class="fas fa-print me-2"></i>Save as PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Countdown for rate limit
+        {% if social.code == 'RATE_LIMIT' %}
+        let countdown = 60;
+        const countdownElement = document.getElementById('countdown');
+        const interval = setInterval(() => {
+            countdown--;
+            if (countdownElement) {
+                countdownElement.textContent = countdown;
+            }
+            if (countdown <= 0) {
+                clearInterval(interval);
+                window.location.href = "{% url 'home' %}";
+            }
+        }, 1000);
+        {% endif %}
+
+        // Show toast notification
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.innerHTML = `<i class="fas fa-check-circle me-2"></i>${message} copied!`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        // Copy text function
+        function copyText(text, label) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(label);
+            }).catch(() => {
+                alert('Failed to copy');
+            });
+        }
+
+        // Copy element value (input or textarea)
+        function copyElementValue(elementId, label) {
+            const element = document.getElementById(elementId);
+            const text = element.value;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(label);
+            }).catch(() => {
+                alert('Failed to copy');
+            });
+        }
+
+        // Copy element inner text
+        function copyElementText(elementId, label) {
+            const element = document.getElementById(elementId);
+            const text = element.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(label);
+            }).catch(() => {
+                alert('Failed to copy');
+            });
+        }
+
+        // Copy all content
+        function copyAllToClipboard() {
+            const content = `
+========================================
+SOCIAL MEDIA CONTENT GENERATOR
+========================================
+
+📺 YOUTUBE
+Title: {{ social.youtube.title }}
+Description: {{ social.youtube.description }}
+Tags: {{ social.youtube.tags }}
+
+📸 INSTAGRAM
+Caption: {{ social.instagram.caption }}
+Hashtags: {{ social.instagram.hashtags }}
+
+📘 FACEBOOK
+Post: {{ social.facebook.post }}
+Hashtags: {{ social.facebook.hashtags }}
+
+💼 LINKEDIN
+Post: {{ social.linkedin.post }}
+Hashtags: {{ social.linkedin.hashtags }}
+
+🐦 TWITTER/X
+Tweet: {{ social.twitter.tweet }}
+Hashtags: {{ social.twitter.hashtags }}
+
+🎵 TIKTOK
+Caption: {{ social.tiktok.caption }}
+Hashtags: {{ social.tiktok.hashtags }}
+
+📌 PINTEREST
+Title: {{ social.pinterest.title }}
+Description: {{ social.pinterest.description }}
+Hashtags: {{ social.pinterest.hashtags }}
+
+========================================
+Generated by SocialGenius AI
+========================================
+`;
+            navigator.clipboard.writeText(content).then(() => {
+                showToast('All Content');
+            }).catch(() => {
+                alert('Failed to copy all content');
+            });
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
