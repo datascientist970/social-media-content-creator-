@@ -126,15 +126,8 @@ SESSION_FILE_PATH = BASE_DIR / 'sessions'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-GEMINI_API_KEY = 'key'
-GEMINI_MODEL = 'gemini-2.5-flash'
-# FLORENCE_MODEL_PATH = r'F:\\WEB ENGINEERING\\florence2'
-
-# if not os.path.exists(FLORENCE_MODEL_PATH):
-#     print(f"WARNING: Florence model path does not exist: {FLORENCE_MODEL_PATH}")
-#     print("Please update FLORENCE_MODEL_PATH in settings.py")
-# else:
-#     print(f"Florence model found at: {FLORENCE_MODEL_PATH}")
+GEMINI_API_KEY = 'AIzaSyCkxRNnw-n4HeCSaQzYpmq_Kv6myn31L1c'
+GEMINI_MODEL = 'gemini-3.1-flash-lite-preview'
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 os.makedirs(MEDIA_ROOT, exist_ok=True)
 os.makedirs(STATICFILES_DIRS[0], exist_ok=True)

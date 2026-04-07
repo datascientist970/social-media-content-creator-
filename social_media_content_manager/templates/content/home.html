@@ -85,6 +85,170 @@
             margin-bottom: 2rem;
         }
 
+        /* Services Section */
+        .services {
+            padding: 80px 0;
+            background: #f8fafc;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            text-align: center;
+            transition: all 0.3s ease;
+            height: 100%;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .service-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .service-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+        }
+
+        .service-icon i {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 0;
+            background: white;
+        }
+
+        .feature-item {
+            text-align: center;
+            padding: 24px;
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+
+        .feature-icon i {
+            font-size: 1.5rem;
+            color: #667eea;
+        }
+
+        /* How It Works Section */
+        .how-it-works {
+            padding: 80px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .step-card {
+            text-align: center;
+            padding: 24px;
+        }
+
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 auto 1rem;
+        }
+
+        /* Stats Section */
+        .stats {
+            padding: 60px 0;
+            background: white;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Footer */
+        .footer {
+            background: #1a202c;
+            color: #a0aec0;
+            padding: 60px 0 30px;
+        }
+
+        .footer h5 {
+            color: white;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-links {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.75rem;
+        }
+
+        .footer-links a {
+            color: #a0aec0;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .social-icons a {
+            display: inline-block;
+            width: 36px;
+            height: 36px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 36px;
+            color: white;
+            margin-right: 10px;
+            transition: all 0.3s;
+        }
+
+        .social-icons a:hover {
+            background: #667eea;
+            transform: translateY(-3px);
+        }
+
         /* Alert Messages */
         .alert-error {
             background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
@@ -93,10 +257,6 @@
             border-radius: 16px;
             padding: 1rem 1.5rem;
             margin-bottom: 1.5rem;
-        }
-
-        .alert-error i {
-            margin-right: 10px;
         }
 
         .alert-warning {
@@ -275,20 +435,12 @@
             color: white;
         }
 
-        /* Countdown Timer */
-        .countdown-timer {
-            display: inline-block;
-            background: #1a202c;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            margin-top: 10px;
-        }
-
         @media (max-width: 768px) {
             .hero h1 {
                 font-size: 2rem;
+            }
+            .section-title {
+                font-size: 1.8rem;
             }
             .upload-area {
                 padding: 40px 20px;
@@ -437,11 +589,179 @@
         </div>
     </section>
 
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="section-title">Why Choose SocialGenius AI?</h2>
+                <p class="text-muted">Powerful features that make content creation effortless</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-item">
+                        <div class="feature-icon mx-auto">
+                            <i class="fab fa-youtube"></i>
+                        </div>
+                        <h6 class="fw-bold">YouTube Ready</h6>
+                        <p class="small text-muted">SEO titles, descriptions, and tags optimized for YouTube algorithm</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-item">
+                        <div class="feature-icon mx-auto">
+                            <i class="fab fa-instagram"></i>
+                        </div>
+                        <h6 class="fw-bold">Instagram Optimized</h6>
+                        <p class="small text-muted">Engaging captions with 30+ trending hashtags for maximum reach</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-item">
+                        <div class="feature-icon mx-auto">
+                            <i class="fab fa-linkedin"></i>
+                        </div>
+                        <h6 class="fw-bold">LinkedIn Professional</h6>
+                        <p class="small text-muted">Professional posts with industry insights and thought leadership</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-item">
+                        <div class="feature-icon mx-auto">
+                            <i class="fab fa-tiktok"></i>
+                        </div>
+                        <h6 class="fw-bold">TikTok Viral</h6>
+                        <p class="small text-muted">Short, punchy captions with viral hashtags for TikTok success</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-item">
+                        <div class="feature-icon mx-auto">
+                            <i class="fab fa-pinterest"></i>
+                        </div>
+                        <h6 class="fw-bold">Pinterest SEO</h6>
+                        <p class="small text-muted">Keyword-rich titles and descriptions for Pinterest discovery</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-item">
+                        <div class="feature-icon mx-auto">
+                            <i class="fas fa-magic"></i>
+                        </div>
+                        <h6 class="fw-bold">AI-Powered</h6>
+                        <p class="small text-muted">Advanced AI understanding of your content for authentic engagement</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="text-white">How It Works</h2>
+                <p class="text-white-50">Three simple steps to amazing social media content</p>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <h5>Upload Content</h5>
+                        <p class="text-white-50">Upload your image, video, or enter text content</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <h5>AI Analysis</h5>
+                        <p class="text-white-50">Our AI analyzes your content and extracts key insights</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <h5>Get Results</h5>
+                        <p class="text-white-50">Receive optimized content for all social media platforms</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="container">
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <div class="stat-number">7+</div>
+                    <p class="text-muted">Platforms Supported</p>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-number">10k+</div>
+                    <p class="text-muted">Content Generated</p>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-number">98%</div>
+                    <p class="text-muted">User Satisfaction</p>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-number">24/7</div>
+                    <p class="text-muted">AI Processing</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5>SocialGenius AI</h5>
+                    <p class="small">Transform your content into viral social media posts with AI-powered descriptions and hashtags for all platforms.</p>
+                    <div class="social-icons mt-3">
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h5>Product</h5>
+                    <ul class="footer-links">
+                        <li><a href="#">Features</a></li>
+                        <li><a href="#">Pricing</a></li>
+                        <li><a href="#">API</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h5>Company</h5>
+                    <ul class="footer-links">
+                        <li><a href="#">About</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Careers</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Newsletter</h5>
+                    <p class="small">Subscribe for updates and tips</p>
+                    <div class="input-group">
+                        <input type="email" class="form-control" placeholder="Your email">
+                        <button class="btn btn-primary" type="button">Subscribe</button>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="text-center small">
+                &copy; 2024 SocialGenius AI. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
     <script>
         let rateLimitEndTime = null;
         let countdownInterval = null;
 
-        // Check for rate limit in localStorage
         function checkRateLimit() {
             const savedEndTime = localStorage.getItem('rateLimitEndTime');
             if (savedEndTime) {
@@ -486,10 +806,8 @@
             if (countdownInterval) clearInterval(countdownInterval);
         }
 
-        // Check rate limit on page load
         checkRateLimit();
 
-        // Hero section file handling
         let selectedContentType = 'image';
         
         document.querySelectorAll('input[name="content_type_hero"]').forEach(radio => {
@@ -549,7 +867,6 @@
         }
 
         function redirectToProcess() {
-            // Check if rate limited
             if (rateLimitEndTime && Date.now() < rateLimitEndTime) {
                 const remaining = Math.ceil((rateLimitEndTime - Date.now()) / 1000);
                 showRateLimitMessage(remaining);
@@ -651,7 +968,6 @@
             }, 5000);
         }
 
-        // Add slide out animation
         const style = document.createElement('style');
         style.textContent = `
             @keyframes slideIn {
@@ -665,7 +981,6 @@
         `;
         document.head.appendChild(style);
 
-        // Drag and drop
         const dropZone = document.getElementById('hero-upload-area');
         if (dropZone) {
             dropZone.addEventListener('dragover', (e) => {
@@ -697,7 +1012,6 @@
             });
         }
 
-        // Check API status periodically
         function checkAPIStatus() {
             fetch('/api-status/')
                 .then(response => response.json())
@@ -720,7 +1034,6 @@
                 });
         }
         
-        // Check API status every 30 seconds
         checkAPIStatus();
         setInterval(checkAPIStatus, 30000);
     </script>

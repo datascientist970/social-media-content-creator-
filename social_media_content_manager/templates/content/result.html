@@ -194,6 +194,61 @@
             transition: all 0.3s ease;
         }
 
+        /* Metrics Card */
+        .metrics-card {
+            background: white;
+            border-radius: 20px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 1rem;
+            border-right: 1px solid #e5e7eb;
+        }
+
+        .metric-item:last-child {
+            border-right: none;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .metric-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #6b7280;
+            letter-spacing: 0.5px;
+        }
+
+        .confidence-high {
+            color: #10b981;
+        }
+
+        .confidence-medium {
+            color: #f59e0b;
+        }
+
+        .confidence-low {
+            color: #ef4444;
+        }
+
+        .progress-custom {
+            height: 6px;
+            border-radius: 3px;
+            background-color: #e5e7eb;
+        }
+
+        .progress-bar-custom {
+            height: 6px;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
         .toast-notification {
             position: fixed;
             bottom: 20px;
@@ -261,7 +316,7 @@
             </div>
             {% endif %}
             
-            <a href="{% url 'home' %}" class="btn btn-primary btn-lg rounded-pill px-4">
+            <a href="/" class="btn btn-primary btn-lg rounded-pill px-4">
                 <i class="fas fa-arrow-left me-2"></i>Back to Home
             </a>
         </div>
@@ -271,7 +326,7 @@
         
         <!-- Back Button -->
         <div class="mb-4">
-            <a href="{% url 'home' %}" class="btn back-btn">
+            <a href="/" class="btn back-btn">
                 <i class="fas fa-arrow-left me-2"></i>Upload New Content
             </a>
         </div>
@@ -283,26 +338,132 @@
             </div>
             <div class="card-body" style="padding: 1.5rem;">
                 <div class="mb-3">
-                    <div class="section-label">VISUAL DESCRIPTION</div>
+                    <div class="section-label">📝 CORRECTED TRANSCRIPT</div>
                     <div class="content-box">
-                        <i class="fas fa-eye text-muted me-2"></i>
+                        <i class="fas fa-file-alt text-muted me-2"></i>
                         <span>{{ description }}</span>
-                        <div class="copy-icon" onclick="copyText('{{ description|escapejs }}', 'Description')">
+                        <div class="copy-icon" onclick="copyText('{{ description|escapejs }}', 'Corrected Transcript')">
                             <i class="fas fa-copy"></i> Copy
                         </div>
                     </div>
                 </div>
                 
-                {% if transcript %}
+                {% if main_topic %}
                 <div class="mb-3">
-                    <div class="section-label">🎤 AUDIO TRANSCRIPT</div>
+                    <div class="section-label">🎯 MAIN TOPIC</div>
                     <div class="content-box">
-                        <i class="fas fa-microphone me-2"></i>
-                        {{ transcript }}
-                        <div class="copy-icon" onclick="copyText('{{ transcript|escapejs }}', 'Transcript')">
+                        <i class="fas fa-tag text-muted me-2"></i>
+                        {{ main_topic }}
+                        <div class="copy-icon" onclick="copyText('{{ main_topic|escapejs }}', 'Main Topic')">
                             <i class="fas fa-copy"></i> Copy
                         </div>
                     </div>
+                </div>
+                {% endif %}
+                
+                {% if key_points %}
+                <div class="mb-3">
+                    <div class="section-label">⭐ KEY POINTS</div>
+                    <div class="content-box">
+                        <ul class="mb-0">
+                            {% for point in key_points %}
+                            <li>{{ point }}</li>
+                            {% endfor %}
+                        </ul>
+                        <div class="copy-icon" onclick="copyText('{{ key_points|join:', ' }}', 'Key Points')">
+                            <i class="fas fa-copy"></i> Copy
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if products_services and products_services != 'None' %}
+                <div class="mb-3">
+                    <div class="section-label">🏷️ PRODUCTS/SERVICES</div>
+                    <div class="content-box">
+                        <i class="fas fa-box text-muted me-2"></i>
+                        {{ products_services }}
+                        <div class="copy-icon" onclick="copyText('{{ products_services|escapejs }}', 'Products/Services')">
+                            <i class="fas fa-copy"></i> Copy
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Processing Metrics Card -->
+        <div class="metrics-card">
+            <div class="card-header-custom" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <i class="fas fa-chart-simple"></i>
+                <span>Processing Metrics</span>
+            </div>
+            <div class="card-body-custom">
+                <div class="row">
+                    <div class="col-md-3 metric-item">
+                        <div class="metric-value {% if confidence_score >= 70 %}confidence-high{% elif confidence_score >= 40 %}confidence-medium{% else %}confidence-low{% endif %}">
+                            {{ confidence_score }}%
+                        </div>
+                        <div class="metric-label">Final Confidence</div>
+                        <div class="progress-custom mt-2">
+                            <div class="progress-bar-custom" style="width: {{ confidence_score }}%; background: {% if confidence_score >= 70 %}#10b981{% elif confidence_score >= 40 %}#f59e0b{% else %}#ef4444{% endif %};"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 metric-item">
+                        <div class="metric-value">{{ whisper_confidence }}%</div>
+                        <div class="metric-label">Whisper Confidence</div>
+                        <div class="progress-custom mt-2">
+                            <div class="progress-bar-custom" style="width: {{ whisper_confidence }}%; background: #3b82f6;"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 metric-item">
+                        <div class="metric-value">{{ google_confidence }}%</div>
+                        <div class="metric-label">Google STT Confidence</div>
+                        <div class="progress-custom mt-2">
+                            <div class="progress-bar-custom" style="width: {{ google_confidence }}%; background: #10b981;"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 metric-item">
+                        <div class="metric-value">{{ visual_confidence }}%</div>
+                        <div class="metric-label">Visual Context Confidence</div>
+                        <div class="progress-custom mt-2">
+                            <div class="progress-bar-custom" style="width: {{ visual_confidence }}%; background: #8b5cf6;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if scenes_detected > 0 or conflicts_count > 0 %}
+                <div class="row mt-3 pt-2 border-top">
+                    <div class="col-md-6 text-center">
+                        <small class="text-muted">🎬 Scenes Detected</small>
+                        <div class="fw-bold">{{ scenes_detected }}</div>
+                    </div>
+                    <div class="col-md-6 text-center">
+                        <small class="text-muted">⚡ Conflicts Resolved</small>
+                        <div class="fw-bold">{{ conflicts_count }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if uncertain_sections %}
+                <div class="mt-3 p-2 bg-warning bg-opacity-10 rounded">
+                    <small class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i> Uncertain Sections:</small>
+                    <ul class="small mt-1 mb-0">
+                        {% for section in uncertain_sections %}
+                        <li>{{ section }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                {% if corrections_made %}
+                <div class="mt-2">
+                    <small class="text-muted"><i class="fas fa-edit me-1"></i> Corrections Made:</small>
+                    <ul class="small mt-1 mb-0 text-muted">
+                        {% for correction in corrections_made %}
+                        <li>{{ correction }}</li>
+                        {% endfor %}
+                    </ul>
                 </div>
                 {% endif %}
             </div>
@@ -534,7 +695,7 @@
             }
             if (countdown <= 0) {
                 clearInterval(interval);
-                window.location.href = "{% url 'home' %}";
+                window.location.href = "/";
             }
         }, 1000);
         {% endif %}
@@ -590,34 +751,34 @@ SOCIAL MEDIA CONTENT GENERATOR
 ========================================
 
 📺 YOUTUBE
-Title: {{ social.youtube.title }}
-Description: {{ social.youtube.description }}
-Tags: {{ social.youtube.tags }}
+Title: ${document.getElementById('yt-title')?.value || ''}
+Description: ${document.getElementById('yt-desc')?.value || ''}
+Tags: ${document.getElementById('yt-tags')?.innerText || ''}
 
 📸 INSTAGRAM
-Caption: {{ social.instagram.caption }}
-Hashtags: {{ social.instagram.hashtags }}
+Caption: ${document.getElementById('ig-caption')?.value || ''}
+Hashtags: ${document.getElementById('ig-hashtags')?.innerText || ''}
 
 📘 FACEBOOK
-Post: {{ social.facebook.post }}
-Hashtags: {{ social.facebook.hashtags }}
+Post: ${document.getElementById('fb-post')?.value || ''}
+Hashtags: ${document.getElementById('fb-hashtags')?.innerText || ''}
 
 💼 LINKEDIN
-Post: {{ social.linkedin.post }}
-Hashtags: {{ social.linkedin.hashtags }}
+Post: ${document.getElementById('li-post')?.value || ''}
+Hashtags: ${document.getElementById('li-hashtags')?.innerText || ''}
 
 🐦 TWITTER/X
-Tweet: {{ social.twitter.tweet }}
-Hashtags: {{ social.twitter.hashtags }}
+Tweet: ${document.getElementById('tw-tweet')?.value || ''}
+Hashtags: ${document.getElementById('tw-hashtags')?.innerText || ''}
 
 🎵 TIKTOK
-Caption: {{ social.tiktok.caption }}
-Hashtags: {{ social.tiktok.hashtags }}
+Caption: ${document.getElementById('tiktok-caption')?.value || ''}
+Hashtags: ${document.getElementById('tiktok-hashtags')?.innerText || ''}
 
 📌 PINTEREST
-Title: {{ social.pinterest.title }}
-Description: {{ social.pinterest.description }}
-Hashtags: {{ social.pinterest.hashtags }}
+Title: ${document.getElementById('pinterest-title')?.value || ''}
+Description: ${document.getElementById('pinterest-desc')?.value || ''}
+Hashtags: ${document.getElementById('pinterest-hashtags')?.innerText || ''}
 
 ========================================
 Generated by SocialGenius AI

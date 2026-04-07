@@ -5,4 +5,5 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('process/', views.process, name='process'),
     path('result/', views.result, name='result'),
+    path('api-status/', views.api_status, name='api_status'),
 ]
