@@ -1,23 +1,17 @@
-# Django Core
 Django==4.2.11
-
-# AI & Machine Learning (BLIP alternative - lighter)
-transformers==4.36.0
-torch==2.1.2
-torchvision==0.16.2
-accelerate==0.25.0
-
-# Image Processing
-Pillow==10.1.0
-opencv-python==4.8.1.78
-
-# Audio/Video Processing
-openai-whisper==20231117
-
-# API & HTTP Requests
 requests==2.31.0
 google-generativeai==0.3.2
-
-# Utilities
-numpy==1.24.3
-tiktoken==0.5.0
+openai-whisper==20231117
+opencv-python==4.9.0.80
+Pillow==10.2.0
+numpy==1.26.3
+celery==5.3.6
+redis==5.0.1
+psycopg2-binary==2.9.9
+python-decouple==3.8
+django-cors-headers==4.3.1
+djangorestframework==3.14.0
+gunicorn==21.2.0
+python-dotenv==1.0.1
+beautifulsoup4==4.12.3
+duckduckgo-search==4.1.1
