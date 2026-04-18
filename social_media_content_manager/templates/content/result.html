@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>SocialGenius AI | Your Generated Content</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -170,6 +171,28 @@
             border-color: #667eea;
         }
 
+        /* Engagement Buttons */
+        .engagement-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: space-around;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .engagement-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .engagement-btn:hover {
+            transform: translateY(-2px);
+        }
+
         /* Platform Colors */
         .youtube-header { background: #FF0000; color: white; }
         .instagram-header { background: linear-gradient(135deg, #833AB4, #E4405F, #F56040); color: white; }
@@ -194,61 +217,11 @@
             transition: all 0.3s ease;
         }
 
-        /* Metrics Card */
-        .metrics-card {
-            background: white;
-            border-radius: 20px;
-            margin-bottom: 1.5rem;
-            overflow: hidden;
+        .export-card .btn-light:hover {
+            transform: translateY(-2px);
         }
 
-        .metric-item {
-            text-align: center;
-            padding: 1rem;
-            border-right: 1px solid #e5e7eb;
-        }
-
-        .metric-item:last-child {
-            border-right: none;
-        }
-
-        .metric-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #667eea;
-        }
-
-        .metric-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            color: #6b7280;
-            letter-spacing: 0.5px;
-        }
-
-        .confidence-high {
-            color: #10b981;
-        }
-
-        .confidence-medium {
-            color: #f59e0b;
-        }
-
-        .confidence-low {
-            color: #ef4444;
-        }
-
-        .progress-custom {
-            height: 6px;
-            border-radius: 3px;
-            background-color: #e5e7eb;
-        }
-
-        .progress-bar-custom {
-            height: 6px;
-            border-radius: 3px;
-            transition: width 0.5s ease;
-        }
-
+        /* Toast Notification */
         .toast-notification {
             position: fixed;
             bottom: 20px;
@@ -263,14 +236,35 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.2);
         }
 
+        .toast-notification.error {
+            background: #ef4444;
+        }
+
+        .toast-notification.warning {
+            background: #f59e0b;
+        }
+
         @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
-        
+
         @keyframes slideOut {
             from { transform: translateX(0); opacity: 1; }
             to { transform: translateX(100%); opacity: 0; }
+        }
+
+        /* Variant Badge */
+        .variant-badge {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            z-index: 1000;
         }
     </style>
 </head>
@@ -324,148 +318,32 @@
         {% else %}
         <!-- Success Display - Show Generated Content -->
         
-        <!-- Back Button -->
-        <div class="mb-4">
+        <!-- Header with Buttons -->
+        <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <a href="/" class="btn back-btn">
                 <i class="fas fa-arrow-left me-2"></i>Upload New Content
             </a>
+            <button class="btn btn-outline-light rounded-pill" onclick="showAnalyticsDashboard()">
+                <i class="fas fa-chart-line me-2"></i>Analytics Dashboard
+            </button>
         </div>
         
         <!-- Analysis Results Card -->
         <div class="card mb-4" style="background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px -15px rgba(0,0,0,0.2);">
             <div class="card-header" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 1rem 1.5rem;">
-                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Analysis Results</h5>
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Content Analysis</h5>
             </div>
             <div class="card-body" style="padding: 1.5rem;">
                 <div class="mb-3">
-                    <div class="section-label">📝 CORRECTED TRANSCRIPT</div>
+                    <div class="section-label">📝 YOUR CONTENT</div>
                     <div class="content-box">
                         <i class="fas fa-file-alt text-muted me-2"></i>
                         <span>{{ description }}</span>
-                        <div class="copy-icon" onclick="copyText('{{ description|escapejs }}', 'Corrected Transcript')">
+                        <div class="copy-icon" onclick="copyText('{{ description|escapejs }}', 'Content')">
                             <i class="fas fa-copy"></i> Copy
                         </div>
                     </div>
                 </div>
-                
-                {% if main_topic %}
-                <div class="mb-3">
-                    <div class="section-label">🎯 MAIN TOPIC</div>
-                    <div class="content-box">
-                        <i class="fas fa-tag text-muted me-2"></i>
-                        {{ main_topic }}
-                        <div class="copy-icon" onclick="copyText('{{ main_topic|escapejs }}', 'Main Topic')">
-                            <i class="fas fa-copy"></i> Copy
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-                
-                {% if key_points %}
-                <div class="mb-3">
-                    <div class="section-label">⭐ KEY POINTS</div>
-                    <div class="content-box">
-                        <ul class="mb-0">
-                            {% for point in key_points %}
-                            <li>{{ point }}</li>
-                            {% endfor %}
-                        </ul>
-                        <div class="copy-icon" onclick="copyText('{{ key_points|join:', ' }}', 'Key Points')">
-                            <i class="fas fa-copy"></i> Copy
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-                
-                {% if products_services and products_services != 'None' %}
-                <div class="mb-3">
-                    <div class="section-label">🏷️ PRODUCTS/SERVICES</div>
-                    <div class="content-box">
-                        <i class="fas fa-box text-muted me-2"></i>
-                        {{ products_services }}
-                        <div class="copy-icon" onclick="copyText('{{ products_services|escapejs }}', 'Products/Services')">
-                            <i class="fas fa-copy"></i> Copy
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-        
-        <!-- Processing Metrics Card -->
-        <div class="metrics-card">
-            <div class="card-header-custom" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                <i class="fas fa-chart-simple"></i>
-                <span>Processing Metrics</span>
-            </div>
-            <div class="card-body-custom">
-                <div class="row">
-                    <div class="col-md-3 metric-item">
-                        <div class="metric-value {% if confidence_score >= 70 %}confidence-high{% elif confidence_score >= 40 %}confidence-medium{% else %}confidence-low{% endif %}">
-                            {{ confidence_score }}%
-                        </div>
-                        <div class="metric-label">Final Confidence</div>
-                        <div class="progress-custom mt-2">
-                            <div class="progress-bar-custom" style="width: {{ confidence_score }}%; background: {% if confidence_score >= 70 %}#10b981{% elif confidence_score >= 40 %}#f59e0b{% else %}#ef4444{% endif %};"></div>
-                        </div>
-                    </div>
-                    <div class="col-md-3 metric-item">
-                        <div class="metric-value">{{ whisper_confidence }}%</div>
-                        <div class="metric-label">Whisper Confidence</div>
-                        <div class="progress-custom mt-2">
-                            <div class="progress-bar-custom" style="width: {{ whisper_confidence }}%; background: #3b82f6;"></div>
-                        </div>
-                    </div>
-                    <div class="col-md-3 metric-item">
-                        <div class="metric-value">{{ google_confidence }}%</div>
-                        <div class="metric-label">Google STT Confidence</div>
-                        <div class="progress-custom mt-2">
-                            <div class="progress-bar-custom" style="width: {{ google_confidence }}%; background: #10b981;"></div>
-                        </div>
-                    </div>
-                    <div class="col-md-3 metric-item">
-                        <div class="metric-value">{{ visual_confidence }}%</div>
-                        <div class="metric-label">Visual Context Confidence</div>
-                        <div class="progress-custom mt-2">
-                            <div class="progress-bar-custom" style="width: {{ visual_confidence }}%; background: #8b5cf6;"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                {% if scenes_detected > 0 or conflicts_count > 0 %}
-                <div class="row mt-3 pt-2 border-top">
-                    <div class="col-md-6 text-center">
-                        <small class="text-muted">🎬 Scenes Detected</small>
-                        <div class="fw-bold">{{ scenes_detected }}</div>
-                    </div>
-                    <div class="col-md-6 text-center">
-                        <small class="text-muted">⚡ Conflicts Resolved</small>
-                        <div class="fw-bold">{{ conflicts_count }}</div>
-                    </div>
-                </div>
-                {% endif %}
-                
-                {% if uncertain_sections %}
-                <div class="mt-3 p-2 bg-warning bg-opacity-10 rounded">
-                    <small class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i> Uncertain Sections:</small>
-                    <ul class="small mt-1 mb-0">
-                        {% for section in uncertain_sections %}
-                        <li>{{ section }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% endif %}
-                
-                {% if corrections_made %}
-                <div class="mt-2">
-                    <small class="text-muted"><i class="fas fa-edit me-1"></i> Corrections Made:</small>
-                    <ul class="small mt-1 mb-0 text-muted">
-                        {% for correction in corrections_made %}
-                        <li>{{ correction }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% endif %}
             </div>
         </div>
         
@@ -473,7 +351,7 @@
         <div class="row">
             <div class="col-lg-6">
                 <!-- YouTube Card -->
-                <div class="platform-card">
+                <div class="platform-card" data-platform="youtube">
                     <div class="card-header-custom youtube-header">
                         <i class="fab fa-youtube"></i>
                         <span>YouTube</span>
@@ -506,7 +384,7 @@
                 </div>
                 
                 <!-- Instagram Card -->
-                <div class="platform-card">
+                <div class="platform-card" data-platform="instagram">
                     <div class="card-header-custom instagram-header">
                         <i class="fab fa-instagram"></i>
                         <span>Instagram</span>
@@ -531,7 +409,7 @@
                 </div>
                 
                 <!-- Facebook Card -->
-                <div class="platform-card">
+                <div class="platform-card" data-platform="facebook">
                     <div class="card-header-custom facebook-header">
                         <i class="fab fa-facebook"></i>
                         <span>Facebook</span>
@@ -556,7 +434,7 @@
                 </div>
                 
                 <!-- TikTok Card -->
-                <div class="platform-card">
+                <div class="platform-card" data-platform="tiktok">
                     <div class="card-header-custom tiktok-header">
                         <i class="fab fa-tiktok"></i>
                         <span>TikTok</span>
@@ -583,7 +461,7 @@
             
             <div class="col-lg-6">
                 <!-- LinkedIn Card -->
-                <div class="platform-card">
+                <div class="platform-card" data-platform="linkedin">
                     <div class="card-header-custom linkedin-header">
                         <i class="fab fa-linkedin"></i>
                         <span>LinkedIn</span>
@@ -608,7 +486,7 @@
                 </div>
                 
                 <!-- Twitter Card -->
-                <div class="platform-card">
+                <div class="platform-card" data-platform="twitter">
                     <div class="card-header-custom twitter-header">
                         <i class="fab fa-twitter"></i>
                         <span>Twitter/X</span>
@@ -633,7 +511,7 @@
                 </div>
                 
                 <!-- Pinterest Card -->
-                <div class="platform-card">
+                <div class="platform-card" data-platform="pinterest">
                     <div class="card-header-custom pinterest-header">
                         <i class="fab fa-pinterest"></i>
                         <span>Pinterest</span>
@@ -684,67 +562,183 @@
     </div>
 
     <script>
-        // Countdown for rate limit
-        {% if social.code == 'RATE_LIMIT' %}
-        let countdown = 60;
-        const countdownElement = document.getElementById('countdown');
-        const interval = setInterval(() => {
-            countdown--;
-            if (countdownElement) {
-                countdownElement.textContent = countdown;
-            }
-            if (countdown <= 0) {
-                clearInterval(interval);
-                window.location.href = "/";
-            }
-        }, 1000);
-        {% endif %}
-
-        // Show toast notification
-        function showToast(message) {
+        // ============================================
+        // GET CONTENT ID FROM URL
+        // ============================================
+        const urlParams = new URLSearchParams(window.location.search);
+        const contentId = urlParams.get('content_id') || localStorage.getItem('last_content_id');
+        
+        // ============================================
+        // USER ID FOR ANALYTICS
+        // ============================================
+        let userId = localStorage.getItem('socialgenius_user_id');
+        if (!userId) {
+            userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('socialgenius_user_id', userId);
+        }
+        
+        // ============================================
+        // TRACK PAGE VIEW (IMPRESSION)
+        // ============================================
+        if (contentId) {
+            fetch('/api/update-analytics/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    content_id: contentId,
+                    impressions: 1
+                })
+            }).catch(err => console.error('Analytics error:', err));
+        }
+        
+        // ============================================
+        // TOAST NOTIFICATION
+        // ============================================
+        function showToast(message, type = 'success') {
             const toast = document.createElement('div');
-            toast.className = 'toast-notification';
-            toast.innerHTML = `<i class="fas fa-check-circle me-2"></i>${message} copied!`;
+            toast.className = `toast-notification ${type}`;
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            
+            toast.innerHTML = `${icons[type] || 'ℹ️'} ${message}`;
             document.body.appendChild(toast);
+            
             setTimeout(() => {
                 toast.style.animation = 'slideOut 0.3s ease';
                 setTimeout(() => toast.remove(), 300);
-            }, 2000);
+            }, 3000);
         }
-
-        // Copy text function
+        
+        // ============================================
+        // COPY FUNCTIONS WITH TRACKING
+        // ============================================
         function copyText(text, label) {
+            if (contentId) trackEngagement('click');
             navigator.clipboard.writeText(text).then(() => {
-                showToast(label);
+                showToast(`${label} copied!`);
             }).catch(() => {
                 alert('Failed to copy');
             });
         }
-
-        // Copy element value (input or textarea)
+        
         function copyElementValue(elementId, label) {
+            if (contentId) trackEngagement('click');
             const element = document.getElementById(elementId);
             const text = element.value;
             navigator.clipboard.writeText(text).then(() => {
-                showToast(label);
+                showToast(`${label} copied!`);
             }).catch(() => {
                 alert('Failed to copy');
             });
         }
-
-        // Copy element inner text
+        
         function copyElementText(elementId, label) {
+            if (contentId) trackEngagement('click');
             const element = document.getElementById(elementId);
             const text = element.innerText;
             navigator.clipboard.writeText(text).then(() => {
-                showToast(label);
+                showToast(`${label} copied!`);
             }).catch(() => {
                 alert('Failed to copy');
             });
         }
-
-        // Copy all content
+        
+        // ============================================
+        // ENGAGEMENT TRACKING
+        // ============================================
+        function trackEngagement(action) {
+            if (!contentId) return;
+            
+            const metrics = {
+                'like': { likes: 1 },
+                'share': { shares: 1 },
+                'save': { saves: 1 },
+                'click': { clicks: 1 }
+            };
+            
+            fetch('/api/update-analytics/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    content_id: contentId,
+                    ...metrics[action]
+                })
+            }).catch(err => console.error('Analytics error:', err));
+        }
+        
+        function trackLike(platform) {
+            trackEngagement('like');
+            showToast(`👍 Liked ${platform} post!`, 'success');
+        }
+        
+        function trackShare(platform) {
+            trackEngagement('share');
+            showToast(`🔁 Shared ${platform} post!`, 'success');
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'SocialGenius AI Content',
+                    text: `Check out this ${platform} post!`,
+                    url: window.location.href
+                }).catch(() => {});
+            }
+        }
+        
+        function trackSave(platform) {
+            trackEngagement('save');
+            showToast(`💾 Saved ${platform} post!`, 'success');
+        }
+        
+        // ============================================
+        // ADD ENGAGEMENT BUTTONS TO PLATFORMS
+        // ============================================
+        function addEngagementButtons() {
+            const platforms = document.querySelectorAll('.platform-card');
+            platforms.forEach(card => {
+                const existingButtons = card.querySelector('.engagement-buttons');
+                if (existingButtons) return;
+                
+                const platformHeader = card.querySelector('.card-header-custom span');
+                const platformName = platformHeader ? platformHeader.innerText : 'Content';
+                
+                const cardBody = card.querySelector('.card-body-custom');
+                if (!cardBody) return;
+                
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'engagement-buttons';
+                buttonsDiv.innerHTML = `
+                    <button class="btn btn-sm btn-outline-success engagement-btn" onclick="trackLike('${platformName}')">
+                        <i class="far fa-thumbs-up"></i> Like
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary engagement-btn" onclick="trackShare('${platformName}')">
+                        <i class="fas fa-share-alt"></i> Share
+                    </button>
+                    <button class="btn btn-sm btn-outline-info engagement-btn" onclick="trackSave('${platformName}')">
+                        <i class="far fa-bookmark"></i> Save
+                    </button>
+                `;
+                
+                cardBody.appendChild(buttonsDiv);
+            });
+        }
+        
+        // ============================================
+        // COPY ALL CONTENT
+        // ============================================
         function copyAllToClipboard() {
+            if (contentId) trackEngagement('click');
+            
             const content = `
 ========================================
 SOCIAL MEDIA CONTENT GENERATOR
@@ -785,11 +779,175 @@ Generated by SocialGenius AI
 ========================================
 `;
             navigator.clipboard.writeText(content).then(() => {
-                showToast('All Content');
+                showToast('All Content copied!');
             }).catch(() => {
                 alert('Failed to copy all content');
             });
         }
+        
+        // ============================================
+        // ANALYTICS DASHBOARD
+        // ============================================
+        async function showAnalyticsDashboard() {
+            try {
+                const response = await fetch('/api/analytics-dashboard/');
+                const data = await response.json();
+                
+                if (data.success && data.dashboard.total_posts > 0) {
+                    const dashboard = data.dashboard;
+                    
+                    const modalHtml = `
+                        <div class="modal fade" id="analyticsModal" tabindex="-1">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                        <h5 class="modal-title"><i class="fas fa-chart-line me-2"></i>Analytics Dashboard</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row mb-4">
+                                            <div class="col-md-4">
+                                                <div class="card text-center">
+                                                    <div class="card-body">
+                                                        <h3 class="text-primary">${dashboard.total_posts}</h3>
+                                                        <small class="text-muted">Total Posts</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card text-center">
+                                                    <div class="card-body">
+                                                        <h3 class="text-success">${dashboard.total_engagement}</h3>
+                                                        <small class="text-muted">Total Engagement</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card text-center">
+                                                    <div class="card-body">
+                                                        <h3 class="text-info">${dashboard.total_reach}</h3>
+                                                        <small class="text-muted">Total Reach</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <h6>Platform Performance</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead>
+                                                    <tr><th>Platform</th><th>Posts</th><th>Avg Engagement</th></tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${Object.entries(dashboard.platform_stats).map(([platform, stats]) => `
+                                                        <tr>
+                                                            <td><i class="fab fa-${platform === 'youtube' ? 'youtube' : platform === 'twitter' ? 'twitter' : platform} me-2"></i>${platform}</td>
+                                                            <td>${stats.posts}</td>
+                                                            <td>
+                                                                <div class="progress" style="height: 5px;">
+                                                                    <div class="progress-bar bg-success" style="width: ${Math.min(stats.avg_engagement, 100)}%"></div>
+                                                                </div>
+                                                                <small>${stats.avg_engagement.toFixed(2)}%</small>
+                                                            </td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        
+                                        <h6 class="mt-4">🏆 Best Performing Posts</h6>
+                                        ${dashboard.best_posts.map(post => `
+                                            <div class="card mb-2">
+                                                <div class="card-body py-2">
+                                                    <strong><i class="fab fa-${post.platform === 'youtube' ? 'youtube' : post.platform === 'twitter' ? 'twitter' : post.platform} me-2"></i>${post.platform}</strong>
+                                                    <p class="small text-muted mb-1">${post.preview}...</p>
+                                                    <small class="text-success">⭐ Engagement: ${post.engagement_rate.toFixed(2)}%</small>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const existingModal = document.getElementById('analyticsModal');
+                    if (existingModal) existingModal.remove();
+                    
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    const modal = new bootstrap.Modal(document.getElementById('analyticsModal'));
+                    modal.show();
+                } else {
+                    showToast('No analytics data yet. Generate some content first!', 'info');
+                }
+            } catch (error) {
+                console.error('Analytics error:', error);
+                showToast('Failed to load analytics', 'error');
+            }
+        }
+        
+        // ============================================
+        // COUNTDOWN FOR RATE LIMIT
+        // ============================================
+        {% if social.code == 'RATE_LIMIT' %}
+        let countdown = 60;
+        const countdownElement = document.getElementById('countdown');
+        const interval = setInterval(() => {
+            countdown--;
+            if (countdownElement) {
+                countdownElement.textContent = countdown;
+            }
+            if (countdown <= 0) {
+                clearInterval(interval);
+                window.location.href = "/";
+            }
+        }, 1000);
+        {% endif %}
+        
+        // ============================================
+        // SHOW A/B TEST VARIANT
+        // ============================================
+        const variant = localStorage.getItem('ab_test_variant');
+        if (variant && contentId) {
+            const variantDiv = document.createElement('div');
+            variantDiv.className = 'variant-badge';
+            variantDiv.innerHTML = `<i class="fas fa-flask me-1"></i>A/B Test Variant ${variant}`;
+            document.body.appendChild(variantDiv);
+            
+            // Send variant to analytics
+            fetch('/api/update-analytics/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    content_id: contentId + '_variant',
+                    variant: variant
+                })
+            }).catch(() => {});
+        }
+        
+        // ============================================
+        // INITIALIZE
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            addEngagementButtons();
+            
+            // Track export card buttons
+            const exportCard = document.querySelector('.export-card');
+            if (exportCard && contentId) {
+                const copyAllBtn = exportCard.querySelector('.btn-light:first-child');
+                if (copyAllBtn) {
+                    copyAllBtn.addEventListener('click', () => trackEngagement('click'));
+                }
+                
+                const savePdfBtn = exportCard.querySelector('.btn-light:last-child');
+                if (savePdfBtn) {
+                    savePdfBtn.addEventListener('click', () => trackEngagement('save'));
+                }
+            }
+        });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

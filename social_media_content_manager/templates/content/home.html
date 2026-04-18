@@ -277,12 +277,6 @@
             margin-bottom: 1.5rem;
         }
 
-        .close-btn {
-            background: rgba(255,255,255,0.2);
-            border: none;
-            color: white;
-        }
-
         /* Upload Card */
         .upload-card {
             background: white;
@@ -435,6 +429,72 @@
             color: white;
         }
 
+        /* Toast Notification */
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 500;
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .toast-notification.error {
+            background: #ef4444;
+        }
+
+        .toast-notification.warning {
+            background: #f59e0b;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        /* Button Group Styles */
+        .btn-group-custom .btn-check:checked + .btn-outline-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .btn-outline-primary {
+            border-color: #cbd5e1;
+            color: #4a5568;
+        }
+
+        .btn-outline-primary:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+        }
+
+        /* Textarea focus */
+        textarea:focus {
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+        }
+
+        /* File input hidden but functional */
+        .file-input-hidden {
+            position: absolute;
+            width: 0;
+            height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+
         @media (max-width: 768px) {
             .hero h1 {
                 font-size: 2rem;
@@ -470,6 +530,11 @@
                     <li class="nav-item"><a class="nav-link" href="#services">Services</a></li>
                     <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
                     <li class="nav-item"><a class="nav-link" href="#how-it-works">How It Works</a></li>
+                    <li class="nav-item" id="analyticsNavItem" style="display: none;">
+                        <a class="nav-link" href="#" onclick="showAnalyticsDashboard()">
+                            <i class="fas fa-chart-line"></i> Analytics
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -505,7 +570,7 @@
                                     {% endfor %}
                                 {% endif %}
 
-                                <!-- Rate Limit Countdown (if applicable) -->
+                                <!-- Rate Limit Countdown -->
                                 <div id="rateLimitMessage" style="display: none;" class="alert alert-warning">
                                     <i class="fas fa-hourglass-half me-2"></i>
                                     Rate limit exceeded. Please wait <span id="countdown">60</span> seconds before trying again.
@@ -514,29 +579,36 @@
                                 <!-- API Status Indicator -->
                                 <div class="api-status text-center">
                                     <span class="status-dot status-online" id="apiStatusDot"></span>
-                                    <span id="apiStatusText">Gemini API: Online</span>
+                                    <span id="apiStatusText">LLM API: Online</span>
+                                    <span id="variantBadge" class="ms-2 badge bg-info" style="display: none;"></span>
                                 </div>
                                 
                                 <div class="btn-group-custom d-flex justify-content-center gap-2 mb-4">
-                                    <input type="radio" class="btn-check" name="content_type_hero" id="hero_image" value="image" autocomplete="off" checked>
-                                    <label class="btn btn-outline-primary rounded-pill" for="hero_image"><i class="fas fa-image me-2"></i>Image</label>
+                                    <input type="radio" class="btn-check" name="content_type" id="content_image" value="image" autocomplete="off" checked>
+                                    <label class="btn btn-outline-primary rounded-pill" for="content_image"><i class="fas fa-image me-2"></i>Image</label>
                                     
-                                    <input type="radio" class="btn-check" name="content_type_hero" id="hero_video" value="video" autocomplete="off">
-                                    <label class="btn btn-outline-primary rounded-pill" for="hero_video"><i class="fas fa-video me-2"></i>Video</label>
+                                    <input type="radio" class="btn-check" name="content_type" id="content_video" value="video" autocomplete="off">
+                                    <label class="btn btn-outline-primary rounded-pill" for="content_video"><i class="fas fa-video me-2"></i>Video</label>
                                     
-                                    <input type="radio" class="btn-check" name="content_type_hero" id="hero_text" value="text" autocomplete="off">
-                                    <label class="btn btn-outline-primary rounded-pill" for="hero_text"><i class="fas fa-paragraph me-2"></i>Text</label>
+                                    <input type="radio" class="btn-check" name="content_type" id="content_text" value="text" autocomplete="off">
+                                    <label class="btn btn-outline-primary rounded-pill" for="content_text"><i class="fas fa-paragraph me-2"></i>Text</label>
                                 </div>
 
-                                <div id="hero-upload-area" class="upload-area" onclick="document.getElementById('heroFileInput').click()">
-                                    <i class="fas fa-cloud-upload-alt"></i>
-                                    <h6 class="mt-2">Click or drag & drop to upload</h6>
-                                    <p class="text-muted small mb-0">PNG, JPG, MP4 up to 10MB</p>
-                                    <input type="file" id="heroFileInput" class="d-none" accept="image/*,video/*">
-                                    <div id="hero-preview" class="preview-container mt-3"></div>
+                                <!-- Upload Area for Image/Video -->
+                                <div id="uploadAreaContainer">
+                                    <div id="uploadArea" class="upload-area">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <h6 class="mt-2">Click or drag & drop to upload</h6>
+                                        <p class="text-muted small mb-0">PNG, JPG, MP4 up to 10MB</p>
+                                        <input type="file" id="fileInput" class="file-input-hidden" accept="image/*,video/*">
+                                        <div id="previewContainer" class="preview-container mt-3"></div>
+                                    </div>
                                 </div>
 
-                                <textarea id="hero-text-input" class="form-control mt-3" rows="4" style="display: none;" placeholder="Enter your text content here..."></textarea>
+                                <!-- Text Input Area -->
+                                <div id="textInputContainer" style="display: none;">
+                                    <textarea id="textInput" class="form-control mt-3" rows="5" placeholder="Enter your text content here..."></textarea>
+                                </div>
 
                                 <button class="btn btn-generate text-white w-100 mt-4 py-3" onclick="redirectToProcess()">
                                     <i class="fas fa-magic me-2"></i>Generate Social Media Content
@@ -612,7 +684,7 @@
                             <i class="fab fa-instagram"></i>
                         </div>
                         <h6 class="fw-bold">Instagram Optimized</h6>
-                        <p class="small text-muted">Engaging captions with 30+ trending hashtags for maximum reach</p>
+                        <p class="small text-muted">Engaging captions with trending hashtags for maximum reach</p>
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -645,10 +717,10 @@
                 <div class="col-md-4">
                     <div class="feature-item">
                         <div class="feature-icon mx-auto">
-                            <i class="fas fa-magic"></i>
+                            <i class="fas fa-chart-line"></i>
                         </div>
-                        <h6 class="fw-bold">AI-Powered</h6>
-                        <p class="small text-muted">Advanced AI understanding of your content for authentic engagement</p>
+                        <h6 class="fw-bold">Analytics Dashboard</h6>
+                        <p class="small text-muted">Track engagement and optimize your content strategy</p>
                     </div>
                 </div>
             </div>
@@ -759,6 +831,186 @@
     </footer>
 
     <script>
+        // ============================================
+        // DOM Elements
+        // ============================================
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const uploadAreaContainer = document.getElementById('uploadAreaContainer');
+        const textInputContainer = document.getElementById('textInputContainer');
+        const textInput = document.getElementById('textInput');
+        const contentImageRadio = document.getElementById('content_image');
+        const contentVideoRadio = document.getElementById('content_video');
+        const contentTextRadio = document.getElementById('content_text');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        
+        let selectedFile = null;
+        let selectedContentType = 'image';
+
+        // ============================================
+        // USER ID MANAGEMENT FOR ANALYTICS
+        // ============================================
+        let userId = localStorage.getItem('socialgenius_user_id');
+        if (!userId) {
+            userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('socialgenius_user_id', userId);
+        }
+
+        // ============================================
+        // CONTENT TYPE TOGGLE - FIXED
+        // ============================================
+        function toggleContentType() {
+            if (contentTextRadio.checked) {
+                // Show text input, hide upload area
+                uploadAreaContainer.style.display = 'none';
+                textInputContainer.style.display = 'block';
+                selectedContentType = 'text';
+                // Clear any selected file
+                selectedFile = null;
+                fileInput.value = '';
+                previewContainer.innerHTML = '';
+            } else {
+                // Show upload area, hide text input
+                uploadAreaContainer.style.display = 'block';
+                textInputContainer.style.display = 'none';
+                selectedContentType = contentImageRadio.checked ? 'image' : 'video';
+                
+                // Update accept attribute
+                if (contentImageRadio.checked) {
+                    fileInput.accept = 'image/*';
+                } else if (contentVideoRadio.checked) {
+                    fileInput.accept = 'video/*';
+                }
+            }
+        }
+        
+        // Add event listeners to radio buttons
+        contentImageRadio.addEventListener('change', toggleContentType);
+        contentVideoRadio.addEventListener('change', toggleContentType);
+        contentTextRadio.addEventListener('change', toggleContentType);
+        
+        // Initialize
+        toggleContentType();
+
+        // ============================================
+        // UPLOAD AREA CLICK HANDLER - FIXED
+        // ============================================
+        function triggerFileInput() {
+            if (!contentTextRadio.checked) {
+                fileInput.click();
+            }
+        }
+        
+        // Click handler for upload area
+        uploadArea.addEventListener('click', function(e) {
+            // Don't trigger if clicking on remove preview button
+            if (e.target.closest('.remove-preview')) {
+                return;
+            }
+            triggerFileInput();
+        });
+        
+        // File input change handler
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                showPreview(file);
+            }
+        });
+        
+        // ============================================
+        // PREVIEW FUNCTION
+        // ============================================
+        function showPreview(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (file.type.startsWith('image/')) {
+                    previewContainer.innerHTML = `
+                        <div class="preview-container">
+                            <img src="${e.target.result}" style="max-width: 200px; border-radius: 10px;">
+                            <div class="remove-preview" onclick="clearPreview(event)">
+                                <i class="fas fa-times"></i>
+                            </div>
+                        </div>
+                    `;
+                } else if (file.type.startsWith('video/')) {
+                    previewContainer.innerHTML = `
+                        <div class="preview-container">
+                            <video controls style="max-width: 200px;">
+                                <source src="${e.target.result}">
+                            </video>
+                            <div class="remove-preview" onclick="clearPreview(event)">
+                                <i class="fas fa-times"></i>
+                            </div>
+                        </div>
+                    `;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function clearPreview(event) {
+            if (event) {
+                event.stopPropagation();
+            }
+            selectedFile = null;
+            fileInput.value = '';
+            previewContainer.innerHTML = '';
+        }
+        
+        // ============================================
+        // DRAG AND DROP - FIXED
+        // ============================================
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!contentTextRadio.checked) {
+                uploadArea.style.borderColor = '#667eea';
+                uploadArea.style.background = 'linear-gradient(135deg, #f0f4ff 0%, #ffffff 100%)';
+            }
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.style.borderColor = '#e2e8f0';
+            uploadArea.style.background = 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)';
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.style.borderColor = '#e2e8f0';
+            uploadArea.style.background = 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)';
+            
+            if (!contentTextRadio.checked) {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const file = files[0];
+                    // Validate file type
+                    if (contentImageRadio.checked && !file.type.startsWith('image/')) {
+                        showToast('Please drop an image file', 'error');
+                        return;
+                    }
+                    if (contentVideoRadio.checked && !file.type.startsWith('video/')) {
+                        showToast('Please drop a video file', 'error');
+                        return;
+                    }
+                    selectedFile = file;
+                    // Set file input files
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    fileInput.files = dt.files;
+                    showPreview(file);
+                }
+            }
+        });
+
+        // ============================================
+        // RATE LIMIT HANDLING
+        // ============================================
         let rateLimitEndTime = null;
         let countdownInterval = null;
 
@@ -808,64 +1060,32 @@
 
         checkRateLimit();
 
-        let selectedContentType = 'image';
-        
-        document.querySelectorAll('input[name="content_type_hero"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                selectedContentType = this.value;
-                const uploadArea = document.getElementById('hero-upload-area');
-                const textInput = document.getElementById('hero-text-input');
-                const fileInput = document.getElementById('heroFileInput');
-                
-                if (this.value === 'text') {
-                    uploadArea.style.display = 'none';
-                    textInput.style.display = 'block';
-                    fileInput.value = '';
-                    document.getElementById('hero-preview').innerHTML = '';
-                } else {
-                    uploadArea.style.display = 'block';
-                    textInput.style.display = 'none';
-                }
-            });
-        });
-
-        document.getElementById('heroFileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const preview = document.getElementById('hero-preview');
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    if (file.type.startsWith('image/')) {
-                        preview.innerHTML = `
-                            <div class="preview-container">
-                                <img src="${e.target.result}" style="max-width: 200px; border-radius: 10px;">
-                                <div class="remove-preview" onclick="clearPreview()">
-                                    <i class="fas fa-times"></i>
-                                </div>
-                            </div>
-                        `;
-                    } else if (file.type.startsWith('video/')) {
-                        preview.innerHTML = `
-                            <div class="preview-container">
-                                <video controls style="max-width: 200px;">
-                                    <source src="${e.target.result}">
-                                </video>
-                                <div class="remove-preview" onclick="clearPreview()">
-                                    <i class="fas fa-times"></i>
-                                </div>
-                            </div>
-                        `;
-                    }
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        function clearPreview() {
-            document.getElementById('heroFileInput').value = '';
-            document.getElementById('hero-preview').innerHTML = '';
+        // ============================================
+        // TOAST NOTIFICATION
+        // ============================================
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type}`;
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            
+            toast.innerHTML = `${icons[type] || 'ℹ️'} ${message}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
+        // ============================================
+        // GENERATION FUNCTION - FIXED
+        // ============================================
         function redirectToProcess() {
             if (rateLimitEndTime && Date.now() < rateLimitEndTime) {
                 const remaining = Math.ceil((rateLimitEndTime - Date.now()) / 1000);
@@ -873,145 +1093,201 @@
                 return;
             }
 
-            const form = new FormData();
-            form.append('content_type', selectedContentType);
+            const selectedType = document.querySelector('input[name="content_type"]:checked').value;
             
-            if (selectedContentType === 'text') {
-                const textContent = document.getElementById('hero-text-input').value;
-                if (!textContent.trim()) {
+            // For text content
+            if (selectedType === 'text') {
+                const textContent = textInput.value.trim();
+                if (!textContent) {
                     showToast('Please enter text content', 'error');
+                    textInput.focus();
                     return;
                 }
-                form.append('text_content', textContent);
-            } else {
-                const fileInput = document.getElementById('heroFileInput');
-                if (!fileInput.files[0]) {
-                    showToast('Please select a file', 'error');
-                    return;
-                }
-                form.append(selectedContentType, fileInput.files[0]);
+                
+                loadingOverlay.style.display = 'flex';
+                
+                fetch('/api/generate-with-ab-test/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        content_type: 'text',
+                        user_id: userId,
+                        text: textContent
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        localStorage.setItem('last_content_id', data.content_id);
+                        localStorage.setItem('ab_test_variant', data.variant);
+                        window.location.href = `/result/?content_id=${data.content_id}`;
+                    } else {
+                        throw new Error(data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    loadingOverlay.style.display = 'none';
+                    showToast(error.message || 'Network error. Please try again.', 'error');
+                });
+                
+                return;
             }
             
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            // For files (image/video)
+            if (!selectedFile) {
+                showToast('Please select a file', 'error');
+                return;
+            }
             
-            document.getElementById('loadingOverlay').style.display = 'flex';
+            // Show loading
+            loadingOverlay.style.display = 'flex';
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+            formData.append('content_type', selectedType);
+            formData.append(selectedType, selectedFile);
+            formData.append('user_id', userId);
             
             fetch('/process/', {
                 method: 'POST',
-                body: form,
+                body: formData,
                 headers: {
-                    'X-CSRFToken': csrfToken
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
-            }).then(response => {
+            })
+            .then(response => {
                 if (response.redirected) {
                     window.location.href = response.url;
-                } else {
-                    return response.json();
+                    return;
                 }
-            }).then(data => {
-                if (data && data.error) {
-                    document.getElementById('loadingOverlay').style.display = 'none';
-                    
-                    if (data.code === 'RATE_LIMIT') {
-                        const waitTime = data.retry_after || 60;
-                        rateLimitEndTime = Date.now() + (waitTime * 1000);
-                        localStorage.setItem('rateLimitEndTime', rateLimitEndTime);
-                        showRateLimitMessage(waitTime);
-                        showToast(data.error, 'warning');
-                    } else {
-                        showToast(data.error, 'error');
-                    }
+                return response.json();
+            })
+            .then(data => {
+                if (data && data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                } else if (data && data.success === false) {
+                    throw new Error(data.error);
                 }
-            }).catch(error => {
+            })
+            .catch(error => {
                 console.error('Error:', error);
-                document.getElementById('loadingOverlay').style.display = 'none';
-                showToast('Network error. Please try again.', 'error');
+                loadingOverlay.style.display = 'none';
+                showToast(error.message || 'Network error. Please try again.', 'error');
             });
         }
 
-        function showToast(message, type = 'info') {
-            const toastColors = {
-                error: '#f56565',
-                warning: '#ed8936',
-                success: '#48bb78',
-                info: '#4299e1'
-            };
-            
-            const toast = document.createElement('div');
-            toast.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: ${toastColors[type]};
-                color: white;
-                padding: 12px 24px;
-                border-radius: 50px;
-                font-size: 0.9rem;
-                z-index: 10000;
-                animation: slideIn 0.3s ease;
-                box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-            `;
-            
-            const icons = {
-                error: '⚠️',
-                warning: '⚠️',
-                success: '✅',
-                info: 'ℹ️'
-            };
-            
-            toast.innerHTML = `${icons[type]} ${message}`;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => toast.remove(), 300);
-            }, 5000);
-        }
-
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(100%); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
-
-        const dropZone = document.getElementById('hero-upload-area');
-        if (dropZone) {
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropZone.style.borderColor = '#667eea';
-                dropZone.style.background = 'linear-gradient(135deg, #f0f4ff 0%, #ffffff 100%)';
-            });
-            
-            dropZone.addEventListener('dragleave', (e) => {
-                dropZone.style.borderColor = '#e2e8f0';
-                dropZone.style.background = 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)';
-            });
-            
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.style.borderColor = '#e2e8f0';
-                dropZone.style.background = 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)';
+        // ============================================
+        // ANALYTICS FUNCTIONS
+        // ============================================
+        async function showAnalyticsDashboard() {
+            try {
+                const response = await fetch('/api/analytics-dashboard/');
+                const data = await response.json();
                 
-                const file = e.dataTransfer.files[0];
-                if (file) {
-                    const fileInput = document.getElementById('heroFileInput');
-                    const dt = new DataTransfer();
-                    dt.items.add(file);
-                    fileInput.files = dt.files;
+                if (data.success && data.dashboard.total_posts > 0) {
+                    const dashboard = data.dashboard;
                     
-                    const event = new Event('change');
-                    fileInput.dispatchEvent(event);
+                    const modalHtml = `
+                        <div class="modal fade" id="analyticsModal" tabindex="-1">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                        <h5 class="modal-title"><i class="fas fa-chart-line me-2"></i>Your Analytics Dashboard</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row mb-4">
+                                            <div class="col-md-4">
+                                                <div class="card text-center">
+                                                    <div class="card-body">
+                                                        <h3 class="text-primary">${dashboard.total_posts}</h3>
+                                                        <small class="text-muted">Total Posts</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card text-center">
+                                                    <div class="card-body">
+                                                        <h3 class="text-success">${dashboard.total_engagement}</h3>
+                                                        <small class="text-muted">Total Engagement</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card text-center">
+                                                    <div class="card-body">
+                                                        <h3 class="text-info">${dashboard.total_reach}</h3>
+                                                        <small class="text-muted">Total Reach</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <h6>Platform Performance</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead>
+                                                    <tr><th>Platform</th><th>Posts</th><th>Avg Engagement</th></tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${Object.entries(dashboard.platform_stats).map(([platform, stats]) => `
+                                                        <tr>
+                                                            <td><i class="fab fa-${platform === 'youtube' ? 'youtube' : platform === 'twitter' ? 'twitter' : platform} me-2"></i>${platform}</td>
+                                                            <td>${stats.posts}</td>
+                                                            <td>
+                                                                <div class="progress" style="height: 5px;">
+                                                                    <div class="progress-bar bg-success" style="width: ${Math.min(stats.avg_engagement, 100)}%"></div>
+                                                                </div>
+                                                                <small>${stats.avg_engagement.toFixed(2)}%</small>
+                                                            </td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        
+                                        <h6 class="mt-4">🏆 Best Performing Posts</h6>
+                                        ${dashboard.best_posts.map(post => `
+                                            <div class="card mb-2">
+                                                <div class="card-body py-2">
+                                                    <strong><i class="fab fa-${post.platform === 'youtube' ? 'youtube' : post.platform === 'twitter' ? 'twitter' : post.platform} me-2"></i>${post.platform}</strong>
+                                                    <p class="small text-muted mb-1">${post.preview.substring(0, 100)}...</p>
+                                                    <small class="text-success">⭐ Engagement: ${post.engagement_rate.toFixed(2)}%</small>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const existingModal = document.getElementById('analyticsModal');
+                    if (existingModal) existingModal.remove();
+                    
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    const modal = new bootstrap.Modal(document.getElementById('analyticsModal'));
+                    modal.show();
+                } else {
+                    showToast('No analytics data yet. Generate some content first!', 'info');
                 }
-            });
+            } catch (error) {
+                console.error('Analytics error:', error);
+                showToast('Failed to load analytics', 'error');
+            }
         }
 
+        // ============================================
+        // API STATUS CHECK
+        // ============================================
         function checkAPIStatus() {
             fetch('/api-status/')
                 .then(response => response.json())
@@ -1020,20 +1296,37 @@
                     const text = document.getElementById('apiStatusText');
                     if (data.status === 'online') {
                         dot.className = 'status-dot status-online';
-                        text.textContent = 'Gemini API: Online';
+                        text.textContent = 'LLM API: Online';
                     } else {
                         dot.className = 'status-dot status-offline';
-                        text.textContent = 'Gemini API: Offline';
+                        text.textContent = 'LLM API: Offline';
                     }
                 })
                 .catch(() => {
                     const dot = document.getElementById('apiStatusDot');
                     const text = document.getElementById('apiStatusText');
                     dot.className = 'status-dot status-offline';
-                    text.textContent = 'Gemini API: Unknown';
+                    text.textContent = 'LLM API: Unknown';
                 });
         }
         
+        // ============================================
+        // SHOW A/B TEST VARIANT
+        // ============================================
+        const variant = localStorage.getItem('ab_test_variant');
+        if (variant) {
+            const variantBadge = document.getElementById('variantBadge');
+            variantBadge.style.display = 'inline-block';
+            variantBadge.textContent = `Test V${variant}`;
+        }
+        
+        // Show analytics nav item after some content is generated
+        const lastContentId = localStorage.getItem('last_content_id');
+        if (lastContentId) {
+            document.getElementById('analyticsNavItem').style.display = 'block';
+        }
+        
+        // Initialize
         checkAPIStatus();
         setInterval(checkAPIStatus, 30000);
     </script>

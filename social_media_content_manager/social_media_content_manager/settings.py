@@ -15,6 +15,7 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Add at the bottom of settings.py
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -125,10 +126,6 @@ SESSION_FILE_PATH = BASE_DIR / 'sessions'
 # Media files (uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-
-GEMINI_API_KEY = 'AIzaSyCkxRNnw-n4HeCSaQzYpmq_Kv6myn31L1c'
-GEMINI_MODEL = 'gemini-3.1-flash-lite-preview'
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 os.makedirs(MEDIA_ROOT, exist_ok=True)
 os.makedirs(STATICFILES_DIRS[0], exist_ok=True)
 os.makedirs(SESSION_FILE_PATH, exist_ok=True)
@@ -136,4 +133,44 @@ os.makedirs(SESSION_FILE_PATH, exist_ok=True)
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# settings.py - MINIMAL CONFIGURATION (ALL YOU NEED)
+
+# Gemini API (REQUIRED)
+GEMINI_API_KEY = 'key'
+GEMINI_MODEL = "flash"  
+GEMINI_TIMEOUT_SECONDS = 60
+GEMINI_MAX_OUTPUT_TOKENS = 4096
+GEMINI_TEMPERATURE = 1.0  # Note: Gemma 4 performs best at 1.0
+
+
+# Whisper Model (for video transcription)
+WHISPER_MODEL_NAME = "base"
+
+# YouTube API (Optional - for real trends)
+YOUTUBE_API_KEY = 'YOUR_YOUTUBE_API_KEY_HERE'  # Get from Google Cloud Console
+
+# ============================================================
+# FEATURE FLAGS (Control which services are enabled)
+# ============================================================
+
+ENABLE_OPENCV_ANALYSIS = True  # Image/video analysis
+ENABLE_DUCKDUCKGO_TRENDS = False  # DuckDuckGo (often rate limited)
+ENABLE_YOUTUBE_API = True  # YouTube API for trends (requires API key)
+ENABLE_AUTO_TRENDING = True  # Auto trend detection
+ENABLE_GEMINI_FALLBACK = True  # Use mock responses if Gemini fails
+ENABLE_AUDIO_TRANSCRIPTION = True  # Audio transcription for videos
+
+# ============================================================
+# PROCESSING LIMITS
+# ============================================================
+
+AI_MAX_TEXT_CHARS = 6000
+AI_FFMPEG_TIMEOUT_SECONDS = 140
+AI_CACHE_TTL_SECONDS = 3600
+AI_JOB_TTL_SECONDS = 86400
+AI_RATE_LIMIT = 50
+AI_RATE_WINDOW_SECONDS = 3600
+
+
+# YOUTUBE_API_KEY = None  # Leave commented out
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'

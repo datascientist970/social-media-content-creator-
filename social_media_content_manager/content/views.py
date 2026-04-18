@@ -1,253 +1,662 @@
-import os
-import uuid
 import json
-import hashlib
-import concurrent.futures
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.http import JsonResponse
+import logging
+import uuid
+import re
+from typing import Any, Dict, Optional, Tuple
+
 from django.conf import settings
+from django.contrib import messages
+from django.http import HttpRequest, JsonResponse
+from django.shortcuts import render, redirect
+from django.utils.timezone import now
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+
 from .services import (
-    GeminiVisionService, WhisperService, GoogleSTTService,
-    VideoFrameExtractor, SceneDetector, AudioProcessor,
-    TranscriptMerger, TranscriptCorrectionService, ContentGeneratorService
+    JobService,
+    MediaProcessor,
+    RateLimiter,
+    RequestContext,
+    ServiceError,
+    ValidationError,
+    get_content_engine,
 )
 
-vision_service = None
-whisper_service = None
-google_stt_service = None
-frame_extractor = None
-correction_service = None
-generator_service = None
-_result_cache = {}
+logger = logging.getLogger(__name__)
 
-def get_services():
-    global vision_service, whisper_service, google_stt_service, frame_extractor, correction_service, generator_service
-    if vision_service is None:
-        vision_service = GeminiVisionService()
-    if whisper_service is None:
-        whisper_service = WhisperService()
-    if google_stt_service is None:
-        google_stt_service = GoogleSTTService()
-    if frame_extractor is None:
-        frame_extractor = VideoFrameExtractor()
-    if correction_service is None:
-        correction_service = TranscriptCorrectionService()
-    if generator_service is None:
-        generator_service = ContentGeneratorService()
-    return vision_service, whisper_service, google_stt_service, frame_extractor, correction_service, generator_service
+# Try to import analytics modules
+try:
+    from .ab_testing import ABTestingService
+    from .analytics import AnalyticsService
+    HAS_ANALYTICS = True
+except ImportError:
+    HAS_ANALYTICS = False
+    # Create placeholder classes if files don't exist yet
+    class ABTestingService:
+        @staticmethod
+        def get_variant(user_id, test_name): return 'A'
+        @staticmethod
+        def get_prompt_for_variant(variant, test_name): return None
+        @staticmethod
+        def record_result(test_name, variant, user_id, content_type, generated_content): pass
+        @staticmethod
+        def get_test_results(test_name): return {"error": "Not implemented"}
+        @staticmethod
+        def create_test(name, description, variant_a_prompt, variant_b_prompt, traffic_split): return True
+    
+    class AnalyticsService:
+        @staticmethod
+        def track_content(content_id, user_id, platform, content_type, text): pass
+        @staticmethod
+        def update_metrics(content_id, metrics): return True
+        @staticmethod
+        def get_user_dashboard(user_id): return {"total_posts": 0, "platform_stats": {}, "best_posts": [], "total_engagement": 0, "total_reach": 0}
 
-def get_cache_key(file_path):
-    if os.path.exists(file_path):
-        with open(file_path, 'rb') as f:
-            return hashlib.md5(f.read(1024 * 1024)).hexdigest()
-    return None
 
-def api_status(request):
-    return JsonResponse({'status': 'online', 'message': 'API ready'})
+# =========================================================
+# HELPER FUNCTIONS
+# =========================================================
 
-def home(request):
-    return render(request, 'content/home.html')
+def _get_user_id(request: HttpRequest) -> str:
+    """Get or create user ID for tracking"""
+    try:
+        if request.user.is_authenticated:
+            return str(request.user.id)
+    except:
+        pass
+    
+    # Use session or create one
+    if not request.session.session_key:
+        request.session.create()
+    
+    return f"anon_{request.session.session_key}"
 
-def process(request):
-    if request.method != 'POST':
+
+
+def _format_result_for_template(result: dict, description: str) -> dict:
+    """Format the engine result - NO WATERMARK, consistent child"""
+    
+    youtube_data = result.get('youtube', {})
+    instagram_data = result.get('instagram', {})
+    tiktok_data = result.get('tiktok', {})
+    twitter_data = result.get('twitter', {})
+    linkedin_data = result.get('linkedin', {})
+    pinterest_data = result.get('pinterest', {})
+    facebook_data = result.get('facebook', {})
+    
+    # YouTube - ensure no emoji in titles
+    youtube_title = youtube_data.get('title', description[:70])
+    youtube_title = re.sub(r'[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF]', '', youtube_title)
+    
+    youtube_description = youtube_data.get('description', f"{description}")
+    youtube_tags = youtube_data.get('tags', 'financial literacy, kids savings, parenting')
+    
+    # Instagram
+    instagram_caption = instagram_data.get('caption', f"{description}")
+    instagram_hashtags = instagram_data.get('hashtags', '#consciousparenting #kidsandmoney')
+    
+    # Clean Instagram hashtags
+    if isinstance(instagram_hashtags, str):
+        instagram_hashtags = re.sub(r'#\s+', '#', instagram_hashtags)
+        instagram_hashtags = re.sub(r'\s+', ' ', instagram_hashtags)
+    
+    # TikTok
+    tiktok_caption = tiktok_data.get('caption', description[:100])
+    tiktok_hashtags = tiktok_data.get('hashtags', '#moneytok #parentsoftiktok')
+    
+    # Twitter - fix truncation
+    twitter_tweet = twitter_data.get('tweet', description[:200])
+    if twitter_tweet.endswith('...') or twitter_tweet.endswith('…'):
+        # Remove incomplete truncation
+        twitter_tweet = twitter_tweet.replace('…', '').replace('...', '').strip()
+        # Add period if needed
+        if not twitter_tweet.endswith(('.', '!', '?')):
+            twitter_tweet += '.'
+    twitter_hashtags = twitter_data.get('hashtags', '#parenting #financialliteracy')
+    
+    # LinkedIn - remove duplicate hashtags and casual language
+    linkedin_post = linkedin_data.get('post', description)
+    # Remove casual language
+    linkedin_post = re.sub(r'\b(tbh|ngl|lol|omg|honestly|real talk)\b', '', linkedin_post, flags=re.IGNORECASE)
+    # Clean up extra spaces
+    linkedin_post = re.sub(r'\s+', ' ', linkedin_post).strip()
+    
+    linkedin_hashtags = linkedin_data.get('hashtags', '#FinancialLiteracy #ChildDevelopment')
+    # Fix double hashtags
+    linkedin_hashtags = re.sub(r'##+', '#', linkedin_hashtags)
+    
+    # Facebook
+    facebook_post = facebook_data.get('post', instagram_caption)
+    facebook_hashtags = facebook_data.get('hashtags', instagram_hashtags.replace(' ', ', '))
+    
+    # Pinterest
+    pinterest_title = pinterest_data.get('title', youtube_title)
+    pinterest_description = pinterest_data.get('description', youtube_description)
+    pinterest_hashtags = pinterest_data.get('hashtags', '')
+    
+    return {
+        'youtube': {
+            'title': youtube_title,
+            'description': youtube_description,
+            'tags': youtube_tags
+        },
+        'instagram': {
+            'caption': instagram_caption,
+            'hashtags': instagram_hashtags
+        },
+        'facebook': {
+            'post': facebook_post,
+            'hashtags': facebook_hashtags
+        },
+        'linkedin': {
+            'post': linkedin_post,
+            'hashtags': linkedin_hashtags
+        },
+        'twitter': {
+            'tweet': twitter_tweet,
+            'hashtags': twitter_hashtags
+        },
+        'tiktok': {
+            'caption': tiktok_caption,
+            'hashtags': tiktok_hashtags
+        },
+        'pinterest': {
+            'title': pinterest_title,
+            'description': pinterest_description,
+            'hashtags': pinterest_hashtags
+        }
+    }
+
+
+# =========================================================
+# UI VIEWS
+# =========================================================
+
+def home(request: HttpRequest):
+    """Homepage with content generation form"""
+    return render(request, "content/home.html")
+
+
+def result(request: HttpRequest):
+    """Display results from session"""
+    result_data = request.session.get('result')
+    
+    # Also check for content_id in URL params
+    content_id = request.GET.get('content_id')
+    
+    if not result_data and content_id:
+        # Try to get from cache if needed
+        from django.core.cache import cache
+        cached_result = cache.get(f'content_result_{content_id}')
+        if cached_result:
+            result_data = cached_result
+    
+    if not result_data:
+        messages.error(request, 'No results found. Please generate content first.')
         return redirect('home')
     
-    content_type = request.POST.get('content_type')
-    print(f"[INFO] Processing: {content_type}")
-    
+    return render(request, "content/result.html", {
+        'description': result_data.get('description', ''),
+        'social': result_data.get('social', {}),
+        'content_id': result_data.get('content_id', content_id)
+    })
+
+
+# =========================================================
+# HEALTH CHECK
+# =========================================================
+
+def api_status(request: HttpRequest):
+    """Simple health check for frontend polling"""
     try:
-        vision_service, whisper_service, google_stt_service, frame_extractor, correction_service, generator_service = get_services()
+        return JsonResponse({
+            "success": True,
+            "status": "online",
+            "service": "gemini",
+            "time": now().isoformat(),
+            "async_available": JobService.is_available()
+        })
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "status": "offline",
+            "error": str(e)
+        }, status=500)
+
+
+# =========================================================
+# CORE PROCESS ENDPOINT (FRONTEND USES THIS)
+# =========================================================
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def process(request: HttpRequest):
+    """
+    Main entry point used by frontend.
+    Handles text, image, video and redirects to result page.
+    """
+
+    user_id = _get_user_id(request)
+    context = RequestContext(user_id=user_id)
+
+    try:
+        content_type = request.POST.get("content_type", "text")
+        text = request.POST.get("text_content", "").strip()
+        image = request.FILES.get("image")
+        video = request.FILES.get("video")
         
+        # Get optional description for media files (CRITICAL for video/image)
+        media_description = request.POST.get("media_description", "").strip()
+
+        # =====================================================
+        # RATE LIMIT
+        # =====================================================
+        allowed, rl_meta = RateLimiter.check_and_increment(
+            user_id=user_id,
+            limit=int(getattr(settings, "AI_RATE_LIMIT", 20)),
+            window_seconds=int(getattr(settings, "AI_RATE_WINDOW_SECONDS", 3600))
+        )
+
+        if not allowed:
+            messages.error(request, f"Rate limit exceeded. Please wait {rl_meta.get('retry_after', 60)} seconds.")
+            return redirect('home')
+
+        engine = get_content_engine()
+        result = None
         description = ""
-        whisper_transcript = ""
-        whisper_confidence = 0
-        whisper_segments = []
-        google_transcript = ""
-        google_confidence = 0
-        corrected_data = None
-        temp_file_path = None
-        audio_path = None
-        visual_context = None
-        frame_paths = []
-        merged_transcript = ""
-        conflicts = []
-        scene_times = []
-        
-        # ==================== IMAGE PROCESSING ====================
-        if content_type == 'image' and request.FILES.get('image'):
-            uploaded = request.FILES['image']
-            temp_file_path = os.path.join(settings.MEDIA_ROOT, f'temp_{uuid.uuid4().hex}_{uploaded.name}')
-            os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
-            with open(temp_file_path, 'wb+') as f:
-                for chunk in uploaded.chunks():
-                    f.write(chunk)
-            print(f"[INFO] Analyzing image...")
-            analysis = vision_service.analyze_image_with_gemini(temp_file_path)
-            description = analysis if analysis else f"Image: {uploaded.name}"
-            social_content = generator_service.generate_content(
-                {'description': description}, content_type="image", user_text=description
-            )
-            if temp_file_path and os.path.exists(temp_file_path):
-                os.remove(temp_file_path)
-            request.session['result'] = {
-                'description': description, 'whisper_transcript': '', 'whisper_confidence': 0,
-                'google_transcript': '', 'google_confidence': 0, 'merged_transcript': '',
-                'conflicts_count': 0, 'conflicts': [], 'scenes_detected': 0,
-                'visual_context': '', 'visual_confidence': 0, 'corrected_transcript': description,
-                'main_topic': 'Image Content', 'key_points': [], 'products_services': '',
-                'corrections_made': [], 'confidence_score': 0, 'uncertain_sections': [],
-                'social': social_content
-            }
-            return redirect('result')
-        
-        # ==================== VIDEO PROCESSING ====================
-        elif content_type == 'video' and request.FILES.get('video'):
-            uploaded = request.FILES['video']
-            temp_file_path = os.path.join(settings.MEDIA_ROOT, f'temp_{uuid.uuid4().hex}_{uploaded.name}')
-            os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
-            with open(temp_file_path, 'wb+') as f:
-                for chunk in uploaded.chunks():
-                    f.write(chunk)
-            print(f"[INFO] Processing video: {uploaded.name}")
-            
-            cache_key = get_cache_key(temp_file_path)
-            
-            # Extract audio first
-            print(f"[INFO] Extracting audio...")
-            audio_path = whisper_service.extract_audio(temp_file_path)
-            
-            if audio_path:
-                print(f"[INFO] Cleaning audio...")
-                cleaned_audio = AudioProcessor.clean_audio(audio_path)
-                audio_for_transcription = cleaned_audio
-            else:
-                audio_for_transcription = None
-            
-            # Run transcriptions
-            whisper_transcript = ""
-            google_transcript = ""
-            
-            if audio_for_transcription:
-                print(f"[INFO] Transcribing with Whisper...")
-                whisper_transcript, whisper_confidence, whisper_segments = whisper_service.transcribe_with_timestamps(
-                    audio_for_transcription, False
-                )
-                print(f"[INFO] Whisper confidence: {whisper_confidence:.1f}%")
+
+        # =====================================================
+        # TEXT
+        # =====================================================
+        if content_type == "text":
+            if not text:
+                messages.error(request, "Text content is required")
+                return redirect('home')
+
+            result = engine.generate_from_text(text=text, context=context)
+            description = text[:300]
+
+        # =====================================================
+        # IMAGE
+        # =====================================================
+        elif content_type == "image":
+            if image:
+                image_path = MediaProcessor.save_uploaded_file(image, prefix="image")
                 
-                print(f"[INFO] Transcribing with Google STT...")
-                google_transcript, google_confidence = google_stt_service.transcribe_with_confidence(
-                    audio_for_transcription
-                )
-                print(f"[INFO] Google STT confidence: {google_confidence:.1f}%")
-            
-            # Merge transcripts
-            if whisper_transcript or google_transcript:
-                merged_transcript, conflicts = TranscriptMerger.merge_transcripts(whisper_transcript, google_transcript)
-                print(f"[INFO] Merged transcript length: {len(merged_transcript)}")
+                # Pass user description as user_text option
+                options = {}
+                if media_description:
+                    options["user_text"] = media_description
+                    context.log("info", "using_image_description", description=media_description[:100])
                 
-                # Use the merged transcript as the source
-                description = merged_transcript if merged_transcript else whisper_transcript if whisper_transcript else google_transcript
-                print(f"[INFO] Description length: {len(description)}")
+                result = engine.generate_from_image(
+                    image_path=image_path, 
+                    context=context, 
+                    options=options
+                )
+                
+                description = f"Image: {image.name}"
+                if media_description:
+                    description += f" - {media_description[:100]}"
+                
+                MediaProcessor.cleanup_file(image_path)
             else:
-                description = f"Video content about a product for kids"
-                print(f"[INFO] Using fallback description")
+                if not text:
+                    messages.error(request, "Image or description required")
+                    return redirect('home')
+                result = engine.generate_from_text(text=text, context=context)
+                description = text[:300]
+
+        # =====================================================
+        # VIDEO
+        # =====================================================
+        elif content_type == "video":
+            if not video:
+                messages.error(request, "Video file required")
+                return redirect('home')
+
+            video_path = MediaProcessor.save_uploaded_file(video, prefix="video")
             
-            # Clean up audio files
-            if audio_path and os.path.exists(audio_path):
-                os.remove(audio_path)
-            if audio_for_transcription and audio_for_transcription != audio_path and os.path.exists(audio_for_transcription):
-                os.remove(audio_for_transcription)
+            # Pass user description as user_text option (CRITICAL for good results)
+            options = {}
+            if media_description:
+                options["user_text"] = media_description
+                context.log("info", "using_video_description", description=media_description[:100])
             
-            # Generate social content - pass the transcript directly
-            print(f"[INFO] Generating social content from transcript...")
-            social_content = generator_service.generate_content(
-                {'corrected_transcript': description}, 
-                content_type="video"
+            result = engine.generate_from_video(
+                video_path=video_path, 
+                context=context, 
+                options=options
             )
             
-            # Clean up temp file
-            if temp_file_path and os.path.exists(temp_file_path):
-                os.remove(temp_file_path)
+            description = f"Video: {video.name}"
+            if media_description:
+                description += f" - {media_description[:100]}"
             
+            MediaProcessor.cleanup_file(video_path)
+
+        else:
+            messages.error(request, "Invalid content type")
+            return redirect('home')
+
+        # =====================================================
+        # STORE IN SESSION AND REDIRECT TO RESULT PAGE
+        # =====================================================
+        if result:
+            # Format result for template
+            formatted_result = _format_result_for_template(result, description)
+            
+            # Generate a content ID for analytics
+            import uuid
+            content_id = str(uuid.uuid4())
+            
+            # Store in session
             request.session['result'] = {
                 'description': description,
-                'whisper_transcript': whisper_transcript[:2000] if whisper_transcript else '',
-                'whisper_confidence': round(whisper_confidence, 1),
-                'google_transcript': google_transcript[:2000] if google_transcript else '',
-                'google_confidence': round(google_confidence, 1),
-                'merged_transcript': merged_transcript[:2000] if merged_transcript else '',
-                'conflicts_count': len(conflicts),
-                'conflicts': conflicts[:5] if conflicts else [],
-                'scenes_detected': len(scene_times),
-                'visual_context': '',
-                'visual_confidence': 0,
-                'corrected_transcript': description,
-                'main_topic': 'Product Review',
-                'key_points': [],
-                'products_services': 'ATM Money Box',
-                'corrections_made': [],
-                'confidence_score': (whisper_confidence + google_confidence) / 2 if (whisper_confidence or google_confidence) else 0,
-                'uncertain_sections': [],
-                'social': social_content
+                'social': formatted_result,
+                'content_id': content_id
             }
+            
+            # Track the content for analytics
+            try:
+                from .analytics import AnalyticsService
+                for platform, platform_data in formatted_result.items():
+                    text_content = str(platform_data.get('description' if platform == 'youtube' else 
+                                                      'post' if platform == 'facebook' else 
+                                                      'caption' if platform in ['instagram', 'tiktok'] else 
+                                                      'tweet' if platform == 'twitter' else 
+                                                      'title', ''))
+                    AnalyticsService.track_content(
+                        content_id=f"{content_id}_{platform}",
+                        user_id=user_id,
+                        platform=platform,
+                        content_type=content_type,
+                        text=text_content
+                    )
+            except ImportError:
+                pass  # Analytics not installed
+            
+            # Redirect to the result page
             return redirect('result')
-        
-        # ==================== TEXT PROCESSING ====================
-        elif content_type == 'text':
-            description = request.POST.get('text_content', '')
-            if not description:
-                messages.error(request, 'Please enter text content')
-                return redirect('home')
-            print(f"[INFO] Processing text content...")
-            social_content = generator_service.generate_content(
-                {}, content_type="text", user_text=description
-            )
-            request.session['result'] = {
-                'description': description, 'whisper_transcript': '', 'whisper_confidence': 0,
-                'google_transcript': '', 'google_confidence': 0, 'merged_transcript': '',
-                'conflicts_count': 0, 'conflicts': [], 'scenes_detected': 0,
-                'visual_context': '', 'visual_confidence': 0, 'corrected_transcript': description,
-                'main_topic': 'Text Content', 'key_points': [], 'products_services': '',
-                'corrections_made': [], 'confidence_score': 0, 'uncertain_sections': [],
-                'social': social_content
-            }
-            return redirect('result')
-        
         else:
-            messages.error(request, 'Please select a file or enter text')
+            messages.error(request, "Failed to generate content. Please try again.")
             return redirect('home')
-        
+
+    except ServiceError as e:
+        messages.error(request, e.message)
+        return redirect('home')
     except Exception as e:
-        print(f"[ERROR] {e}")
-        import traceback
-        traceback.print_exc()
-        messages.error(request, f'Error: {str(e)}')
+        logger.exception("Process error")
+        messages.error(request, f"Error: {str(e)}")
         return redirect('home')
 
-def result(request):
-    result_data = request.session.get('result')
-    if not result_data:
-        messages.error(request, 'No results found')
-        return redirect('home')
-    return render(request, 'content/result.html', {
-        'description': result_data.get('description', ''),
-        'whisper_transcript': result_data.get('whisper_transcript', ''),
-        'whisper_confidence': result_data.get('whisper_confidence', 0),
-        'google_transcript': result_data.get('google_transcript', ''),
-        'google_confidence': result_data.get('google_confidence', 0),
-        'merged_transcript': result_data.get('merged_transcript', ''),
-        'conflicts_count': result_data.get('conflicts_count', 0),
-        'conflicts': result_data.get('conflicts', []),
-        'scenes_detected': result_data.get('scenes_detected', 0),
-        'visual_context': result_data.get('visual_context', ''),
-        'visual_confidence': result_data.get('visual_confidence', 0),
-        'corrected_transcript': result_data.get('corrected_transcript', ''),
-        'main_topic': result_data.get('main_topic', ''),
-        'key_points': result_data.get('key_points', []),
-        'products_services': result_data.get('products_services', ''),
-        'corrections_made': result_data.get('corrections_made', []),
-        'confidence_score': result_data.get('confidence_score', 0),
-        'uncertain_sections': result_data.get('uncertain_sections', []),
-        'social': result_data.get('social', {})
+# =========================================================
+# OPTIONAL: DIRECT API GENERATE (ASYNC / CELERY READY)
+# =========================================================
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_generate(request: HttpRequest):
+    """Advanced endpoint for async jobs (returns JSON, no redirect)"""
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+        content_type = payload.get("content_type", "text")
+        text = payload.get("text", "")
+
+        user_id = _get_user_id(request)
+        context = RequestContext(user_id=user_id)
+        
+        engine = get_content_engine()
+
+        if content_type == "text":
+            result = engine.generate_from_text(text=text, context=context)
+        else:
+            result = engine.generate_from_text(text=text, context=context)
+
+        return JsonResponse({
+            "success": True,
+            "mode": "sync",
+            "result": result
+        })
+
+    except Exception as e:
+        logger.exception("API generate error")
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
+
+
+# =========================================================
+# ASYNC JOB ENDPOINTS (if using Celery)
+# =========================================================
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def submit_job(request: HttpRequest):
+    """Submit async job and return job_id"""
+    try:
+        user_id = _get_user_id(request)
+        content_type = request.POST.get("content_type", "text")
+        text = request.POST.get("text_content", "").strip()
+        
+        payload = {
+            "user_id": user_id,
+            "content_type": content_type,
+            "text": text,
+        }
+        
+        job_id = JobService.enqueue(payload)
+        
+        return JsonResponse({
+            "success": True,
+            "job_id": job_id,
+            "status_url": f"/api/job/{job_id}/status"
+        })
+        
+    except Exception as e:
+        logger.exception("Submit job error")
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_job_status(request: HttpRequest, job_id: str):
+    """Get job status and result"""
+    job = JobService.get(job_id)
+    
+    if not job:
+        return JsonResponse({
+            "success": False,
+            "error": "Job not found"
+        }, status=404)
+    
+    return JsonResponse({
+        "success": True,
+        "job_id": job_id,
+        "status": job.get("status"),
+        "result": job.get("result"),
+        "error": job.get("error"),
+        "created_at": job.get("created_at"),
+        "updated_at": job.get("updated_at")
     })
+
+
+def api_job_result(request: HttpRequest):
+    """API endpoint for job results - redirect to result page if content exists"""
+    result_data = request.session.get('result')
+    
+    if result_data:
+        # Redirect to the result page with the content_id
+        content_id = result_data.get('content_id', '')
+        return redirect(f'/result/?content_id={content_id}')
+    else:
+        # No result found, redirect to home
+        return redirect('home')
+
+
+# ============================================================
+# A/B TESTING AND ANALYTICS VIEWS
+# ============================================================
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_generate_with_ab_test(request: HttpRequest):
+    """Generate content with A/B testing"""
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+        user_id = data.get("user_id") or _get_user_id(request)
+        content_type = data.get("content_type", "text")
+        text = data.get("text", "")
+        
+        context = RequestContext(user_id=user_id)
+        
+        # Get A/B test variant
+        variant = ABTestingService.get_variant(user_id, "prompt_optimization")
+        
+        # Get variant-specific prompt
+        variant_prompt = ABTestingService.get_prompt_for_variant(variant, "prompt_optimization")
+        
+        # Generate content with variant prompt
+        engine = get_content_engine()
+        
+        if variant_prompt:
+            # Temporarily override system prompt
+            original_prompt = engine.SYSTEM_INSTRUCTION
+            engine.SYSTEM_INSTRUCTION = variant_prompt
+            result = engine.generate_from_text(text=text, context=context)
+            engine.SYSTEM_INSTRUCTION = original_prompt
+        else:
+            result = engine.generate_from_text(text=text, context=context)
+        
+        # Record result for analytics
+        content_id = str(uuid.uuid4())
+        ABTestingService.record_result("prompt_optimization", variant, user_id, content_type, result)
+        
+        # Format result for template
+        formatted_result = _format_result_for_template(result, text[:300] if text else "Content")
+        
+        # Track each platform's content
+        if HAS_ANALYTICS:
+            try:
+                for platform, platform_data in formatted_result.items():
+                    text_content = str(platform_data.get('description' if platform == 'youtube' else 
+                                                      'post' if platform == 'facebook' else 
+                                                      'caption' if platform in ['instagram', 'tiktok'] else 
+                                                      'tweet' if platform == 'twitter' else 
+                                                      'title', ''))
+                    AnalyticsService.track_content(
+                        content_id=f"{content_id}_{platform}",
+                        user_id=user_id,
+                        platform=platform,
+                        content_type=content_type,
+                        text=text_content
+                    )
+            except Exception as e:
+                logger.warning(f"Analytics tracking failed: {e}")
+        
+        # Store in session for result page
+        request.session['result'] = {
+            'description': text[:300] if text else "Content generated",
+            'social': formatted_result,
+            'content_id': content_id
+        }
+        
+        return JsonResponse({
+            "success": True,
+            "variant": variant,
+            "content_id": content_id,
+            "redirect_url": "/result/"
+        })
+        
+    except Exception as e:
+        logger.exception("AB test generation failed")
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_update_analytics(request: HttpRequest):
+    """Webhook endpoint to update engagement metrics"""
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+        content_id = data.get("content_id")
+        metrics = {
+            'impressions': data.get('impressions', 0),
+            'likes': data.get('likes', 0),
+            'comments': data.get('comments', 0),
+            'shares': data.get('shares', 0),
+            'saves': data.get('saves', 0),
+            'clicks': data.get('clicks', 0)
+        }
+        
+        success = AnalyticsService.update_metrics(content_id, metrics)
+        
+        return JsonResponse({
+            "success": success,
+            "message": "Analytics updated" if success else "Content not found"
+        })
+        
+    except Exception as e:
+        logger.exception("Analytics update failed")
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
+
+
+@require_http_methods(["GET"])
+def api_get_analytics_dashboard(request: HttpRequest):
+    """Get analytics dashboard for current user"""
+    user_id = _get_user_id(request)
+    dashboard = AnalyticsService.get_user_dashboard(user_id)
+    
+    return JsonResponse({
+        "success": True,
+        "dashboard": dashboard
+    })
+
+
+@require_http_methods(["GET"])
+def api_get_ab_test_results(request: HttpRequest):
+    """Get A/B test results"""
+    test_name = request.GET.get('test_name', 'prompt_optimization')
+    results = ABTestingService.get_test_results(test_name)
+    
+    return JsonResponse({
+        "success": True,
+        "results": results
+    })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_create_ab_test(request: HttpRequest):
+    """Create a new A/B test"""
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+        success = ABTestingService.create_test(
+            name=data.get('name', 'test'),
+            description=data.get('description', ''),
+            variant_a_prompt=data.get('variant_a_prompt', ''),
+            variant_b_prompt=data.get('variant_b_prompt', ''),
+            traffic_split=data.get('traffic_split', 0.5)
+        )
+        
+        return JsonResponse({
+            "success": True,
+            "message": "A/B test created successfully"
+        })
+        
+    except Exception as e:
+        logger.exception("AB test creation failed")
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
